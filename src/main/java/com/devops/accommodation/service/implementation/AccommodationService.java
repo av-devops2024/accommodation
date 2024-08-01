@@ -61,4 +61,9 @@ public class AccommodationService implements IAccommodationService {
         return new AccommodationDTO(accommodation);
     }
 
+    @Override
+    public Accommodation getAccommodationById(long id) {
+        return this.accommodationRepository.findById(id)
+                .orElseThrow(() -> {throw new EntityNotFoundException(Constants.ACCOMMODATION_NOT_FOUND);});
+    }
 }
