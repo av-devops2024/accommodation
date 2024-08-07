@@ -6,6 +6,7 @@ import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface AvailabilitySlotRepository extends JpaRepository<AvailabilitySlot, Long> {
@@ -13,6 +14,6 @@ public interface AvailabilitySlotRepository extends JpaRepository<AvailabilitySl
 
     List<AvailabilitySlot> findByAccommodation_IdAndValidAndEndDateGreaterThanOrderByStartDateAsc(Long id, boolean valid, LocalDateTime startDate);
 
-    AvailabilitySlot findByAccommodation_IdAndValidAndStartDateAndEndDate(Long id, boolean valid, LocalDateTime startDate, LocalDateTime endDate);
+    Optional<AvailabilitySlot> findByAccommodation_IdAndValidAndStartDateAndEndDate(Long id, boolean valid, LocalDateTime startDate, LocalDateTime endDate);
 
 }

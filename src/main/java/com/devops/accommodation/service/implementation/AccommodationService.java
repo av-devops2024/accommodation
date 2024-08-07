@@ -11,6 +11,7 @@ import ftn.devops.db.Image;
 import ftn.devops.dto.request.CreateAccommodation;
 import ftn.devops.dto.response.AccommodationDTO;
 import ftn.devops.enums.AccommodationBenefits;
+import ftn.devops.log.LogType;
 import org.hibernate.Hibernate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -24,6 +25,8 @@ import java.io.IOException;
 public class AccommodationService implements IAccommodationService {
 
     @Autowired
+    private LogClientService logClientService;
+    @Autowired
     private AccommodationRepository accommodationRepository;
 
     @Autowired
@@ -31,6 +34,7 @@ public class AccommodationService implements IAccommodationService {
 
     @Override
     public AccommodationDTO addAccommodation(CreateAccommodation accommodationDTO) {
+        logClientService.sendLog(LogType.INFO, "Create accommodation", accommodationDTO);
         Accommodation accommodation = new Accommodation();
         accommodation.setName(accommodationDTO.getName());
         accommodationDTO.getServices().forEach(service -> accommodation.addBenefits(AccommodationBenefits.valueOf(service)));
@@ -43,27 +47,33 @@ public class AccommodationService implements IAccommodationService {
                     resultedImage.setAccommodation(accommodation);
                     accommodation.addImage(resultedImage);
             } catch (IOException e) {
+                logClientService.sendLog(LogType.WARN, "Invalid image", image);
                 throw new InvalidImageException(Constants.IMAGE_INVALID + image.getOriginalFilename());
             }
         }
         accommodationRepository.save(accommodation);
         accommodation.getImages().forEach(image -> this.imageService.decompressImage(image));
+        logClientService.sendLog(LogType.INFO, "Added accommodation", accommodationDTO);
         return new AccommodationDTO(accommodation);
     }
 
     @Override
     public AccommodationDTO getAccommodation(long id) {
-        Accommodation accommodation = accommodationRepository.findById(id)
-                .orElseThrow(() -> {throw new EntityNotFoundException(Constants.ACCOMMODATION_NOT_FOUND);});
+        logClientService.sendLog(LogType.INFO, "Get accommodation", id);
+        Accommodation accommodation = getAccommodationById(id);
         Hibernate.initialize(accommodation.getBenefits());
         Hibernate.initialize(accommodation.getImages());
         accommodation.getImages().forEach(image -> this.imageService.decompressImage(image));
+        logClientService.sendLog(LogType.INFO, "Found accommodation", id);
         return new AccommodationDTO(accommodation);
     }
 
     @Override
     public Accommodation getAccommodationById(long id) {
         return this.accommodationRepository.findById(id)
-                .orElseThrow(() -> {throw new EntityNotFoundException(Constants.ACCOMMODATION_NOT_FOUND);});
+                .orElseThrow(() -> {
+                    logClientService.sendLog(LogType.WARN, "Accommodation not found", id);
+                    throw new EntityNotFoundException(Constants.ACCOMMODATION_NOT_FOUND);
+                });
     }
 }
