@@ -1,5 +1,6 @@
 package com.devops.accommodation.service.implementation;
 
+import com.devops.accommodation.aspect.TrackExecutionTime;
 import com.devops.accommodation.exception.ActionNotAllowedException;
 import com.devops.accommodation.exception.EntityNotFoundException;
 import com.devops.accommodation.exception.InvalidDateException;
@@ -13,6 +14,7 @@ import ftn.devops.db.Price;
 import ftn.devops.dto.DateRangeDTO;
 import ftn.devops.dto.PriceDTO;
 import ftn.devops.enums.PriceType;
+import ftn.devops.log.LogType;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -23,6 +25,8 @@ import java.util.List;
 
 @Service
 public class PriceService implements IPriceService {
+    @Autowired
+    private LogClientService logClientService;
 
     @Autowired
     private PriceRepository priceRepository;
@@ -33,57 +37,74 @@ public class PriceService implements IPriceService {
     private IAccommodationService accommodationService;
 
     @Override
+    @TrackExecutionTime
     public List<PriceDTO> addPrice(int accommodationId, PriceDTO priceDTO) {
+        logClientService.sendLog(LogType.INFO, "Add price", new Object[]{accommodationId, priceDTO});
         this.checkDateValidity(priceDTO);
 
-        if (reservationService.hasApprovedReservation(priceDTO.getStartDate(), priceDTO.getEndDate()))
+        if (reservationService.hasApprovedReservation(priceDTO.getStartDate(), priceDTO.getEndDate())){
+            logClientService.sendLog(LogType.WARN, "Reservation is present in period", new Object[]{accommodationId, priceDTO});
             throw new ActionNotAllowedException(Constants.ACTION_NOT_ALLOWED_BECAUSE_CONTAINS_RESERVATION);
-
+        }
         checkPriceRangeOverlapping(accommodationId, priceDTO);
 
         Price price = createPrice(priceDTO, accommodationId);
         priceRepository.save(price);
+        logClientService.sendLog(LogType.INFO, "Price is added", new Object[]{priceDTO});
         return getActivePrices(accommodationId);
     }
 
     @Override
+    @TrackExecutionTime
     public List<PriceDTO> updatePrice(int accommodationId, PriceDTO priceDTO) {
+        logClientService.sendLog(LogType.INFO, "Update price", new Object[]{accommodationId, priceDTO});
         this.checkDateValidity(priceDTO);
 
-        if (reservationService.hasApprovedReservation(priceDTO.getStartDate(), priceDTO.getEndDate()))
+        if (reservationService.hasApprovedReservation(priceDTO.getStartDate(), priceDTO.getEndDate())) {
+            logClientService.sendLog(LogType.WARN, "Reservation is present in period", new Object[]{accommodationId, priceDTO});
             throw new ActionNotAllowedException(Constants.ACTION_NOT_ALLOWED_BECAUSE_CONTAINS_RESERVATION);
+        }
 
-        Price price = priceRepository.findById(priceDTO.getId())
-                .orElseThrow(() -> new ActionNotAllowedException(Constants.PRICE_NOT_FOUND));
-        if (!price.getStartDate().equals(priceDTO.getStartDate()) || !price.getEndDate().equals(priceDTO.getEndDate()))
+        Price price = getPrice(priceDTO.getId());
+        if (!price.getStartDate().equals(priceDTO.getStartDate()) || !price.getEndDate().equals(priceDTO.getEndDate())) {
+            logClientService.sendLog(LogType.WARN, "Price range can not be changed", new Object[]{accommodationId, priceDTO});
             throw new ActionNotAllowedException(Constants.PRICE_START_AND_END_DATE_ARE_NOT_CHANGEABLE);
+        }
 
         price.setValue(priceDTO.getValue());
         price.setType(PriceType.valueOf(priceDTO.getType()));
         priceRepository.save(price);
+        logClientService.sendLog(LogType.INFO, "Price is updated", new Object[]{priceDTO});
         return getPrices(accommodationId);
     }
 
     @Override
+    @TrackExecutionTime
     public List<PriceDTO> getPrices(long accommodationId) {
+        logClientService.sendLog(LogType.INFO, "Get prices", accommodationId);
         List<Price> prices = priceRepository.findByAccommodation_IdAndDeletedFalseOrderByStartDateAsc(accommodationId);
         return getPriceDTOs(prices);
     }
 
     @Override
+    @TrackExecutionTime
     public List<PriceDTO> getActivePrices(long accommodationId) {
+        logClientService.sendLog(LogType.INFO, "Get active prices", accommodationId);
         List<Price> prices = priceRepository.findByAccommodation_IdAndDeletedFalseAndEndDateGreaterThanOrderByStartDateAsc(accommodationId,  LocalDateTime.now());
         return getPriceDTOs(prices);
     }
 
     @Override
+    @TrackExecutionTime
     public List<PriceDTO> deletePrices(int accommodationId, PriceDTO priceDTO) {
-        Price price = priceRepository.findById(priceDTO.getId())
-                .orElseThrow(() -> new jakarta.persistence.EntityNotFoundException(Constants.PRICE_NOT_FOUND));
-        if (accommodationId != price.getAccommodation().getId())
+        Price price = getPrice(priceDTO.getId());
+        if (accommodationId != price.getAccommodation().getId()){
+            logClientService.sendLog(LogType.WARN, "Price does not belong to accommodation", new Object[]{accommodationId, priceDTO});
             throw new EntityNotFoundException(Constants.INVALID_PRICE_ACCOMMODATION_RELATIONSHIP);
+        }
         price.setDeleted(true);
         priceRepository.save(price);
+        logClientService.sendLog(LogType.INFO, "Price is deleted", new Object[]{priceDTO});
         return getPrices(accommodationId);
     }
 
@@ -98,14 +119,23 @@ public class PriceService implements IPriceService {
         return price;
     }
 
-    private List<PriceDTO> checkPriceRangeOverlapping(long accommodationId, PriceDTO priceDTO) {
+    private void checkPriceRangeOverlapping(long accommodationId, PriceDTO priceDTO) {
         List<PriceDTO> prices = getActivePrices(accommodationId);
         List<DateRangeDTO> dateRanges = new ArrayList<>();
         prices.forEach(price -> dateRanges.add(new DateRangeDTO(price.getStartDate(), price.getEndDate())));
         dateRanges.add(new DateRangeDTO(priceDTO.getStartDate(), priceDTO.getEndDate()));
-        if (DateUtils.checkIfContainsOverlapping(dateRanges))
+        if (DateUtils.checkIfContainsOverlapping(dateRanges)){
+            logClientService.sendLog(LogType.WARN, "Price ranges are overlapping", new Object[]{accommodationId, priceDTO});
             throw new InvalidDateException(Constants.OVERLAPPING_INTERVALS);
-        return prices;
+        }
+    }
+
+    private Price getPrice(long id){
+        return priceRepository.findById(id)
+                .orElseThrow(() -> {
+                    logClientService.sendLog(LogType.WARN, "Price is not found", id);
+                    throw new EntityNotFoundException(Constants.PRICE_NOT_FOUND);
+                });
     }
 
     private List<PriceDTO> getPriceDTOs(List<Price> prices) {
