@@ -1,5 +1,6 @@
 package com.devops.accommodation.service.implementation;
 
+import com.devops.accommodation.exception.ActionNotAllowedException;
 import com.devops.accommodation.aspect.TrackExecutionTime;
 import com.devops.accommodation.exception.EntityNotFoundException;
 import com.devops.accommodation.exception.InvalidDateException;
@@ -8,6 +9,7 @@ import com.devops.accommodation.repository.AvailabilitySlotRepository;
 import com.devops.accommodation.service.interfaces.IAccommodationService;
 import com.devops.accommodation.service.interfaces.IAvailabilitySlotService;
 import com.devops.accommodation.service.interfaces.IHostService;
+import com.devops.accommodation.service.interfaces.IReservationService;
 import com.devops.accommodation.utils.Constants;
 import ftn.devops.db.Accommodation;
 import ftn.devops.db.AvailabilitySlot;
@@ -36,11 +38,16 @@ public class AvailabilitySlotService implements IAvailabilitySlotService {
     @Autowired
     private IHostService hostService;
 
+    @Autowired
+    private IReservationService reservationService;
+
     @Override
     @TrackExecutionTime
     public List<AvailabilitySlotDTO> addAvailabilitySlot(long accommodationId, AvailabilitySlotDTO availabilitySlotDTO) {
         logClientService.sendLog(LogType.INFO, "Add availability slot", availabilitySlotDTO);
         checkDateValidity(availabilitySlotDTO);
+        if (reservationService.hasApprovedReservation(availabilitySlotDTO.getStartDate(), availabilitySlotDTO.getEndDate()))
+            throw new ActionNotAllowedException(Constants.ACTION_NOT_ALLOWED_BECAUSE_CONTAINS_RESERVATION);
 
         Host host = hostService.findById(1L); //TODO: update 1L
         List<Accommodation> result = host.getAccommodations().stream().filter(accommodation -> accommodation.getId() == accommodationId).collect(Collectors.toList());
@@ -77,6 +84,9 @@ public class AvailabilitySlotService implements IAvailabilitySlotService {
     @Override
     public List<AvailabilitySlotDTO> deleteAvailabilitySlot(long accommodationId, AvailabilitySlotDTO availabilitySlotDTO) {
         logClientService.sendLog(LogType.INFO, "Delete active availability slot", new Object[]{accommodationId, availabilitySlotDTO});
+        if (reservationService.hasApprovedReservation(availabilitySlotDTO.getStartDate(), availabilitySlotDTO.getEndDate()))
+            throw new ActionNotAllowedException(Constants.ACTION_NOT_ALLOWED_BECAUSE_CONTAINS_RESERVATION);
+        // TODO: add log
         AvailabilitySlot availabilitySlot = availabilitySlotRepository
                 .findByAccommodation_IdAndValidAndStartDateAndEndDate(accommodationId, true, availabilitySlotDTO.getStartDate(), availabilitySlotDTO.getEndDate())
                 .orElseThrow(() -> {
