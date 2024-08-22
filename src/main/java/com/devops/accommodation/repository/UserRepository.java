@@ -1,10 +1,10 @@
 package com.devops.accommodation.repository;
 
-import ftn.devops.db.Host;
+import ftn.devops.db.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public interface HostRepository extends JpaRepository<Host, Long> {
+public interface UserRepository extends JpaRepository<User, Long> {
 
 }

@@ -1,11 +1,12 @@
 package com.devops.accommodation.service.interfaces;
 
+import ftn.devops.db.User;
 import ftn.devops.dto.AvailabilitySlotDTO;
 
 import java.util.List;
 
 public interface IAvailabilitySlotService {
-    List<AvailabilitySlotDTO>  addAvailabilitySlot(long accommodationId, AvailabilitySlotDTO availabilitySlotDTO);
+    List<AvailabilitySlotDTO>  addAvailabilitySlot(User user, long accommodationId, AvailabilitySlotDTO availabilitySlotDTO);
 
     List<AvailabilitySlotDTO> getAvailabilitySlots(long accommodationId);
 

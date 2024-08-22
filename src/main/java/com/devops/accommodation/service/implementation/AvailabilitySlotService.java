@@ -3,17 +3,17 @@ package com.devops.accommodation.service.implementation;
 import com.devops.accommodation.exception.ActionNotAllowedException;
 import com.devops.accommodation.aspect.TrackExecutionTime;
 import com.devops.accommodation.exception.EntityNotFoundException;
-import com.devops.accommodation.exception.InvalidDateException;
 import com.devops.accommodation.exception.InvalidRelationshipException;
 import com.devops.accommodation.repository.AvailabilitySlotRepository;
 import com.devops.accommodation.service.interfaces.IAccommodationService;
 import com.devops.accommodation.service.interfaces.IAvailabilitySlotService;
-import com.devops.accommodation.service.interfaces.IHostService;
+import com.devops.accommodation.service.interfaces.IUserService;
 import com.devops.accommodation.service.interfaces.IReservationService;
 import com.devops.accommodation.utils.Constants;
+import com.devops.accommodation.utils.DateUtils;
 import ftn.devops.db.Accommodation;
 import ftn.devops.db.AvailabilitySlot;
-import ftn.devops.db.Host;
+import ftn.devops.db.User;
 import ftn.devops.dto.AvailabilitySlotDTO;
 import ftn.devops.log.LogType;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,24 +32,22 @@ public class AvailabilitySlotService implements IAvailabilitySlotService {
     @Autowired
     private LogClientService logClientService;
     @Autowired
-    private IAccommodationService accommodationService;
-    @Autowired
     private AvailabilitySlotRepository availabilitySlotRepository;
     @Autowired
-    private IHostService hostService;
+    private IUserService hostService;
 
     @Autowired
     private IReservationService reservationService;
 
     @Override
     @TrackExecutionTime
-    public List<AvailabilitySlotDTO> addAvailabilitySlot(long accommodationId, AvailabilitySlotDTO availabilitySlotDTO) {
+    public List<AvailabilitySlotDTO> addAvailabilitySlot(User user, long accommodationId, AvailabilitySlotDTO availabilitySlotDTO) {
         logClientService.sendLog(LogType.INFO, "Add availability slot", availabilitySlotDTO);
-        checkDateValidity(availabilitySlotDTO);
-        if (reservationService.hasApprovedReservation(availabilitySlotDTO.getStartDate(), availabilitySlotDTO.getEndDate()))
+        DateUtils.checkDateValidity(availabilitySlotDTO.getStartDate(), availabilitySlotDTO.getEndDate());
+        if (reservationService.hasApprovedReservationIntersect(accommodationId, availabilitySlotDTO.getStartDate(), availabilitySlotDTO.getEndDate()))
             throw new ActionNotAllowedException(Constants.ACTION_NOT_ALLOWED_BECAUSE_CONTAINS_RESERVATION);
 
-        Host host = hostService.findById(1L); //TODO: update 1L
+        User host = hostService.findById(user.getId());
         List<Accommodation> result = host.getAccommodations().stream().filter(accommodation -> accommodation.getId() == accommodationId).collect(Collectors.toList());
         if (result.size() != 1){
             logClientService.sendLog(LogType.WARN, "Accommodation does not belong to host", new Object[]{host.getId(), accommodationId});
@@ -84,9 +82,8 @@ public class AvailabilitySlotService implements IAvailabilitySlotService {
     @Override
     public List<AvailabilitySlotDTO> deleteAvailabilitySlot(long accommodationId, AvailabilitySlotDTO availabilitySlotDTO) {
         logClientService.sendLog(LogType.INFO, "Delete active availability slot", new Object[]{accommodationId, availabilitySlotDTO});
-        if (reservationService.hasApprovedReservation(availabilitySlotDTO.getStartDate(), availabilitySlotDTO.getEndDate()))
+        if (reservationService.hasApprovedReservationInside(accommodationId, availabilitySlotDTO.getStartDate(), availabilitySlotDTO.getEndDate()))
             throw new ActionNotAllowedException(Constants.ACTION_NOT_ALLOWED_BECAUSE_CONTAINS_RESERVATION);
-        // TODO: add log
         AvailabilitySlot availabilitySlot = availabilitySlotRepository
                 .findByAccommodation_IdAndValidAndStartDateAndEndDate(accommodationId, true, availabilitySlotDTO.getStartDate(), availabilitySlotDTO.getEndDate())
                 .orElseThrow(() -> {
@@ -120,13 +117,6 @@ public class AvailabilitySlotService implements IAvailabilitySlotService {
         availabilitySlots.forEach(slot -> slots.add(new AvailabilitySlotDTO(slot)));
         Collections.sort(slots);
         return slots;
-    }
-
-    private void checkDateValidity(AvailabilitySlotDTO availabilitySlotDTO) {
-        if (availabilitySlotDTO.getStartDate().isBefore(LocalDateTime.now()))
-            throw new InvalidDateException(Constants.INVALID_START_DATE);
-        if (availabilitySlotDTO.getStartDate().isAfter(availabilitySlotDTO.getEndDate()))
-            throw new InvalidDateException(Constants.INVALID_DATE_RANGE);
     }
 
     private List<AvailabilitySlot> insertNewAvailabilitySlot(AvailabilitySlotDTO availabilitySlotDTO, Accommodation accommodation, List<AvailabilitySlot> availabilitySlots) {

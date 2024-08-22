@@ -3,6 +3,10 @@ package com.devops.accommodation.service.implementation;
 import com.google.gson.Gson;
 import ftn.devops.LogServiceGrpc;
 import ftn.devops.LoggingProto;
+import ftn.devops.db.Accommodation;
+import ftn.devops.db.Reservation;
+import ftn.devops.db.User;
+import ftn.devops.enums.NotificationType;
 import ftn.devops.log.LogType;
 import ftn.devops.log.ServiceType;
 import ftn.devops.utils.DateUtils;
@@ -64,6 +68,21 @@ public class LogClientService {
                 .setTimestamp(DateUtils.TimestampToString(LocalDateTime.now()))
                 .build();
         LoggingProto.Response response = logServiceStub.sendTrace(request);
+        return response.getSuccess();
+    }
+
+    public boolean sendNotification(User user, Accommodation accommodation, Reservation reservation, NotificationType notificationType) {
+        LoggingProto.NotificationObject request = LoggingProto.NotificationObject.newBuilder()
+                .setReceiverId(user.getId())
+                .setGuestName(reservation.getGuest().getName())
+                .setAccommodationId(accommodation.getId())
+                .setAccommodationName(accommodation.getName())
+                .setStartDate(DateUtils.TimestampToString(reservation.getStartDate()))
+                .setEndDate(DateUtils.TimestampToString(reservation.getEndDate()))
+                .setNotificationType(notificationType.toString())
+                .setTimestamp(DateUtils.TimestampToString(LocalDateTime.now()))
+                .build();
+        LoggingProto.Response response = logServiceStub.sendNotification(request);
         return response.getSuccess();
     }
 }

@@ -1,7 +1,10 @@
 package com.devops.accommodation.controller;
 
 import com.devops.accommodation.service.interfaces.IAvailabilitySlotService;
+import com.devops.accommodation.service.interfaces.IUserService;
+import ftn.devops.db.User;
 import ftn.devops.dto.AvailabilitySlotDTO;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
@@ -15,10 +18,15 @@ public class AvailabilitySlotController {
     @Autowired
     private IAvailabilitySlotService availabilitySlotService;
 
+    @Autowired
+    private IUserService userService;
+
     @PostMapping("{accommodationId}")
     @ResponseStatus(HttpStatus.OK)
-    public List<AvailabilitySlotDTO> addAvailabilitySlot(@PathVariable int accommodationId, @RequestBody AvailabilitySlotDTO availabilitySlotDTO){
-        return availabilitySlotService.addAvailabilitySlot(accommodationId, availabilitySlotDTO);
+    public List<AvailabilitySlotDTO> addAvailabilitySlot(HttpServletRequest request,
+                                                         @PathVariable int accommodationId, @RequestBody AvailabilitySlotDTO availabilitySlotDTO){
+        User user = userService.getUser(request);
+        return availabilitySlotService.addAvailabilitySlot(user, accommodationId, availabilitySlotDTO);
     }
 
     @GetMapping("{accommodationId}")
