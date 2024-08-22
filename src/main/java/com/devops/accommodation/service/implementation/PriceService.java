@@ -42,7 +42,7 @@ public class PriceService implements IPriceService {
         logClientService.sendLog(LogType.INFO, "Add price", new Object[]{accommodationId, priceDTO});
         this.checkDateValidity(priceDTO);
 
-        if (reservationService.hasApprovedReservation(priceDTO.getStartDate(), priceDTO.getEndDate())){
+        if (reservationService.hasApprovedReservationInside(accommodationId, priceDTO.getStartDate(), priceDTO.getEndDate())){
             logClientService.sendLog(LogType.WARN, "Reservation is present in period", new Object[]{accommodationId, priceDTO});
             throw new ActionNotAllowedException(Constants.ACTION_NOT_ALLOWED_BECAUSE_CONTAINS_RESERVATION);
         }
@@ -60,7 +60,7 @@ public class PriceService implements IPriceService {
         logClientService.sendLog(LogType.INFO, "Update price", new Object[]{accommodationId, priceDTO});
         this.checkDateValidity(priceDTO);
 
-        if (reservationService.hasApprovedReservation(priceDTO.getStartDate(), priceDTO.getEndDate())) {
+        if (reservationService.hasApprovedReservationInside(accommodationId, priceDTO.getStartDate(), priceDTO.getEndDate())) {
             logClientService.sendLog(LogType.WARN, "Reservation is present in period", new Object[]{accommodationId, priceDTO});
             throw new ActionNotAllowedException(Constants.ACTION_NOT_ALLOWED_BECAUSE_CONTAINS_RESERVATION);
         }
@@ -106,6 +106,12 @@ public class PriceService implements IPriceService {
         priceRepository.save(price);
         logClientService.sendLog(LogType.INFO, "Price is deleted", new Object[]{priceDTO});
         return getPrices(accommodationId);
+    }
+
+    @Override
+    public Price findByInterval(LocalDateTime startDate, LocalDateTime endDate) {
+        return priceRepository.findByStartDateLessThanEqualAndEndDateGreaterThanEqual(startDate, endDate)
+                .orElseThrow(() -> {throw new EntityNotFoundException(Constants.PRICE_RANGE_NOT_FOUND);} );
     }
 
     private Price createPrice(PriceDTO priceDTO, long accommodationId) {

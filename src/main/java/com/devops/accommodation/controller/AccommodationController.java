@@ -21,6 +21,7 @@ public class AccommodationController {
     @PostMapping
     @ResponseStatus(HttpStatus.OK)
     public AccommodationDTO addAccommodation(@Valid @ModelAttribute CreateAccommodation accommodationDTO){
+        // automatska/ručna prihvatanje smeštaja --- host može da izabere na nivou smeštaja
         return accommodationService.addAccommodation(accommodationDTO);
     }
 
