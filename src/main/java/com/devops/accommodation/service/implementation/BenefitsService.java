@@ -15,7 +15,7 @@ public class BenefitsService implements IBenefitsService {
     private LogClientService logClientService;
     @Override
     public List<AccommodationBenefits> getBenefits() {
-        logClientService.sendLog(LogType.INFO, "Get benefits", null);
+//        logClientService.sendLog(LogType.INFO, "Get benefits", null);
         return Arrays.asList(AccommodationBenefits.class.getEnumConstants());
     }
 }
