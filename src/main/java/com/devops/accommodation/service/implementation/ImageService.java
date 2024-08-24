@@ -24,23 +24,22 @@ public class ImageService implements IImageService {
 
     @Override
     public Image addImage(MultipartFile imageFile) throws IOException {
-        logClientService.sendLog(LogType.INFO, "Create image", imageFile);
-        Image imageToSave = Image.builder()
-                .name(imageFile.getOriginalFilename())
-                .type(imageFile.getContentType())
-                .imageData(ImageUtils.compressImage(imageFile.getBytes()))
-                .build();
-        imageRepository.save(imageToSave);
-        return imageToSave;
+//        logClientService.sendLog(LogType.INFO, "Create image", imageFile);
+        Image image = new Image();
+        image.setImageData(imageFile.getBytes());
+        image.setName(imageFile.getOriginalFilename());
+        image.setType(imageFile.getContentType());
+        imageRepository.save(image);
+        return image;
     }
 
     @Override
     public void decompressImage(Image image) {
         try {
-            logClientService.sendLog(LogType.INFO, "Decompress image", image.getId());
+//            logClientService.sendLog(LogType.INFO, "Decompress image", image.getId());
             image.setImageData(ImageUtils.decompressImage(image.getImageData()));
         } catch (DataFormatException | IOException exception) {
-            logClientService.sendLog(LogType.ERROR, "Decompress image failed: " + exception.getMessage(), image.getId());
+//            logClientService.sendLog(LogType.ERROR, "Decompress image failed: " + exception.getMessage(), image.getId());
             image.setImageData(new byte[0]);
         }
     }

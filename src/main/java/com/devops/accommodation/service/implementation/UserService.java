@@ -41,17 +41,21 @@ public class UserService implements IUserService {
     public User getUser(HttpServletRequest request) {
         RestTemplate restTemplate = new RestTemplate();
 
-        HttpHeaders headers = new HttpHeaders();
-        Enumeration<String> headerNames = request.getHeaderNames();
-        while (headerNames.hasMoreElements()) {
-            String headerName = headerNames.nextElement();
-            String headerValue = request.getHeader(headerName);
-            headers.add(headerName, headerValue);
-        }
+        // Extract the token from the request (assuming it's stored in a header or session)
+        String authToken = request.getHeader("Authorization");
 
-        HttpEntity<String> entity = new HttpEntity<>(headers);
-        ResponseEntity<Long> result =
-                restTemplate.exchange(authUrl, HttpMethod.GET, entity, Long.class);
-        return findById(result.getBody());
+        // Set up headers with the token
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("Authorization", authToken);
+
+        // Create HttpEntity with headers (body can be null if not needed)
+        HttpEntity<Void> entity = new HttpEntity<>(headers);
+
+        // Perform the HTTP request
+        ResponseEntity<User> result =
+                restTemplate.exchange(authUrl + "/logged-user", HttpMethod.GET, entity, User.class);
+
+        // Return the User object from the response
+        return result.getBody();
     }
 }
