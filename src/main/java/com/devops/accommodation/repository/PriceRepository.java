@@ -12,6 +12,5 @@ public interface PriceRepository extends JpaRepository<Price, Long> {
 
     List<Price> findByAccommodation_IdAndDeletedFalseAndEndDateGreaterThanOrderByStartDateAsc(long accommodationId, LocalDateTime endDate);
 
-    Optional<Price> findByStartDateLessThanEqualAndEndDateGreaterThanEqual(LocalDateTime startDate, LocalDateTime endDate);
-
+    Optional<Price> findByAccommodation_IdAndStartDateLessThanEqualAndEndDateGreaterThanEqual(long accommodationId, LocalDateTime startDate, LocalDateTime endDate);
 }

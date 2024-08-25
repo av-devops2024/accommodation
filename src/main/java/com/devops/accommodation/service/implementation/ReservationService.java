@@ -3,6 +3,7 @@ package com.devops.accommodation.service.implementation;
 import com.devops.accommodation.aspect.TrackExecutionTime;
 import com.devops.accommodation.exception.ActionNotAllowedException;
 import com.devops.accommodation.exception.InvalidRelationshipException;
+import com.devops.accommodation.repository.AccommodationRepository;
 import com.devops.accommodation.repository.ReservationRepository;
 import com.devops.accommodation.service.interfaces.IAccommodationService;
 import com.devops.accommodation.service.interfaces.IPriceService;
@@ -46,6 +47,8 @@ public class ReservationService implements IReservationService {
 
     @Autowired
     private IPriceService priceService;
+    @Autowired
+    private AccommodationRepository accommodationRepository;
 
     @Override
     public boolean hasApprovedReservationInside(long accommodationId, LocalDateTime fromDate, LocalDateTime toDate) {
@@ -105,7 +108,8 @@ public class ReservationService implements IReservationService {
             throw new ActionNotAllowedException(Constants.TOO_LOW_GUEST_NUMBER);
         }
 
-        double price = countPrice(reservationRequest);
+        double price = countPrice(reservationRequest.getAccommodationId(), reservationRequest.getStartDate(),
+                reservationRequest.getEndDate(), reservationRequest.getNumberOfGuests()).b;
         Reservation reservation = createReservation(reservationRequest, accommodation, guest, price, accommodation.isAutomaticallyAcceptRequest());
         logClientService.sendNotification(guest, accommodation, reservation, NotificationType.RESERVATION_REQUEST);
         return getReservationRequestsForGuest(guest);
@@ -240,12 +244,13 @@ public class ReservationService implements IReservationService {
         return slots;
     }
 
-    private double countPrice(CreateReservationRequestDTO reservationRequest) {
-        Price price = priceService.findByInterval(reservationRequest.getStartDate(), reservationRequest.getEndDate());
+    @Override
+    public Pair<Price, Double> countPrice(long accommodationId, LocalDateTime startDate, LocalDateTime endDate, int numberOfGuest) {
+        Price price = priceService.findByInterval(accommodationId, startDate, endDate);
         if (price.getType() == PriceType.PER_ACCOMMODATION)
-            return ChronoUnit.DAYS.between(reservationRequest.getStartDate(), reservationRequest.getEndDate()) * price.getValue();
+            return new Pair<>(price, ChronoUnit.DAYS.between(startDate, endDate) * price.getValue());
         else if (price.getType() == PriceType.PER_PERSON)
-            return price.getValue() * reservationRequest.getNumberOfGuests() * ChronoUnit.DAYS.between(reservationRequest.getStartDate(), reservationRequest.getEndDate());
+            return new Pair<>(price, price.getValue() * numberOfGuest * ChronoUnit.DAYS.between(startDate, endDate));
         throw new ActionNotAllowedException(Constants.NOT_EXISTING_PRICE_TYPE);
     }
 

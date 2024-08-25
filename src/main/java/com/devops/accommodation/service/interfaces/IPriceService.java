@@ -14,5 +14,5 @@ public interface IPriceService {
     List<PriceDTO> getPrices(long accommodationId);
     List<PriceDTO> getActivePrices(long accommodationId);
 
-    Price findByInterval(LocalDateTime startDate, LocalDateTime endDate);
+    Price findByInterval(long accommodationId, LocalDateTime startDate, LocalDateTime endDate);
 }
