@@ -12,8 +12,6 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    env:
-      SONAR_TOKEN: ${{ secrets.SONNAR_TOKEN }}
     steps:
       - uses: actions/checkout@v2
       - name: Set up JDK 17
@@ -45,20 +43,18 @@ jobs:
         with:
           repository: av-devops2024/accommodation
           token: ${{ secrets.PAT_TOKEN }}
-          run: mvn sonar:sonar -Dsonar.projectKey=$PROJECT_KEY -Dsonar.organization=accommodation
-
-      - name: Switch back to Accommodation
-        uses: actions/checkout@v2
-        with:
-          repository: av-devops2024/accommodation
-          token: ${{ secrets.PAT_TOKEN }}
           run: mvn -B package -Dsonar.projectKey=$PROJECT_KEY -Dsonar.organization=accommodation
 
-      - name: Stop Spring Boot application
-        uses: actions/checkout@v2
-        with:
-          repository: av-devops2024/notifications
-          ref: develop
-          token: ${{ secrets.PAT_TOKEN }}
-          run: |
-            pkill -f 'java.*spring-boot'
+    - name: Sonar check
+      run:  mvn -B verify sonar:sonar -Dsonar.projectKey=$PROJECT_KEY -Dsonar.organization=accommodation
+      env:
+        SONAR_TOKEN: ${{ secrets.SONNAR_TOKEN }}
+
+    - name: Stop Spring Boot application
+      uses: actions/checkout@v2
+      with:
+        repository: av-devops2024/notifications
+        ref: develop
+        token: ${{ secrets.PAT_TOKEN }}
+        run: |
+          pkill -f 'java.*spring-boot'
