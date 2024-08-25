@@ -20,6 +20,15 @@ jobs:
           java-version: "17"
           distribution: "temurin"
           cache: maven
+
+      - name: Cache Model Maven repository
+        uses: actions/cache@v4
+        with:
+          repository: av-devops2024/model
+          path: ~/.m2/repository
+          key: model-${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            model-${{ runner.os }}-maven-
       - name: Build model
         uses: actions/checkout@v2
         with:
@@ -28,6 +37,20 @@ jobs:
           path: model-repo
           run: mvn install
 
+      - name: Cache Notifications Maven repository
+        uses: actions/cache@v4
+        with:
+          repository: av-devops2024/notifications
+          path: ~/.m2/repository
+          key: notifications-${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            notifications-${{ runner.os }}-maven-
+      - name: Build notifications
+        uses: actions/checkout@v2
+        with:
+          repository: av-devops2024/notifications
+          token: ${{ secrets.PAT_TOKEN }}
+          run: mvn install
       - name: Start Spring Boot application
         uses: actions/checkout@v2
         with:
@@ -42,9 +65,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.m2/repository
-          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          key: acc-${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
           restore-keys: |
-            ${{ runner.os }}-maven-
+            acc-${{ runner.os }}-maven-
 
       - name: Build with Maven
         uses: actions/checkout@v2
