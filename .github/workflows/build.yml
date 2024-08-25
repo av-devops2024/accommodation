@@ -67,14 +67,12 @@ jobs:
           cache: maven
 
       - name: Build model
-        uses: actions/checkout@v2
         with:
           repository: av-devops2024/model
           token: ${{ secrets.PAT_TOKEN }}
           run: mvn install
 
       - name: Start Spring Boot application
-        uses: actions/checkout@v2
         with:
           repository: av-devops2024/notifications
           ref: develop
@@ -87,7 +85,6 @@ jobs:
         run: mvn -B validate -Dsonar.projectKey=$PROJECT_KEY -Dsonar.organization=accommodation
 
       - name: Stop Spring Boot application
-        uses: actions/checkout@v2
         with:
           repository: av-devops2024/notifications
           ref: develop
