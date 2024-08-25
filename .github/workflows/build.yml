@@ -32,7 +32,7 @@ jobs:
       - name: Build notification
         uses: actions/checkout@v3
         with:
-          repository: av-devops2024/notification
+          repository: av-devops2024/notifications
           ref: develop
           token: ${{ secrets.PAT_TOKEN }}
           path: notification-repo
