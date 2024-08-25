@@ -25,8 +25,35 @@ jobs:
         with:
           repository: av-devops2024/model
           token: ${{ secrets.PAT_TOKEN }}
+          path: model-repo
           run: mvn install
-      - name: Build Accommodation
+      - name: Build notification
+        uses: actions/checkout@v3
+        with:
+          repository: av-devops2024/notification
+          token: ${{ secrets.PAT_TOKEN }}
+          path: notification-repo
+          run: mvn install
+      - name: Cache Maven dependencies
+              uses: actions/cache@v3
+              with:
+                path: ~/.m2/repository
+                key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+                restore-keys: |
+                  ${{ runner.os }}-maven-
+      - name: Build with Maven
+        run: mvn clean install
+      - name: Start Spring Boot application
+        run: |
+          nohup mvn spring-boot:run &
+          sleep 60  # Wait for the application to start
+
+      - name: Build Accommodation - switch back
+        uses: actions/checkout@v2
         run: mvn -B validate sonar:sonar -Dsonar.projectKey=$PROJECT_KEY -Dsonar.organization=accommodation
         env:
           SONAR_TOKEN: ${{ secrets.SONNAR_TOKEN }}
+
+      - name: Stop Spring Boot application
+        run: |
+          pkill -f 'java.*spring-boot' 
