@@ -23,14 +23,12 @@ jobs:
           cache: maven
 
       - name: Build model
-        uses: actions/checkout@v2
         with:
           repository: av-devops2024/model
           token: ${{ secrets.PAT_TOKEN }}
           run: mvn install
 
       - name: Start Spring Boot application
-        uses: actions/checkout@v2
         with:
           repository: av-devops2024/notifications
           ref: develop
@@ -40,13 +38,11 @@ jobs:
             sleep 60  # Wait for the application to start
 
       - name: Switch back to Accommodation
-        uses: actions/checkout@v2
         run: mvn -B validate sonar:sonar -Dsonar.projectKey=$PROJECT_KEY -Dsonar.organization=accommodation
         env:
           SONAR_TOKEN: ${{ secrets.SONNAR_TOKEN }}
 
       - name: Stop Spring Boot application
-        uses: actions/checkout@v2
         with:
           repository: av-devops2024/notifications
           ref: develop
