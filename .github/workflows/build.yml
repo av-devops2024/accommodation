@@ -38,6 +38,17 @@ jobs:
             mvn spring-boot:run &
             sleep 60  # Wait for the application to start
 
+      - name: Cache Maven repository
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-maven-
+
+      - name: Build with Maven
+        run: mvn -B clean verify
+
       - name: Switch back to Accommodation
         uses: actions/checkout@v2
         with:
