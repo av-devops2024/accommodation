@@ -21,9 +21,6 @@ jobs:
         uses: SonarSource/sonarcloud-github-action@master
         env:
           SONAR_TOKEN: ${{ secrets.SONNAR_TOKEN }}
-        run: mvn validate sonar:sonar \
-          -Dsonar.organization=accommodation \
-          -Dsonar.projectKey=$PROJECT_KEY
   build:
     runs-on: ubuntu-latest
     steps:
