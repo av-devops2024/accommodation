@@ -32,9 +32,12 @@ jobs:
           distribution: "temurin"
           cache: maven
       - name: Build model
-        project: av-devops2024/model
-        run: mvn install
-      - name: Build with Maven cloud
+        uses: actions/checkout@v3
+        with:
+          repository: av-devops2024/model
+          token: ${{ secrets.PAT_TOKEN }}
+          run: mvn install
+      - name: Build Accommodation
         run: mvn -B verify sonar:sonar -Dsonar.projectKey=$PROJECT_KEY -Dsonar.organization=accommodation
         env:
           SONAR_TOKEN: ${{ secrets.SONNAR_TOKEN }}
