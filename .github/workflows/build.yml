@@ -24,3 +24,20 @@ jobs:
         run: mvn validate sonar:sonar \
           -Dsonar.organization=accommodation \
           -Dsonar.projectKey=$PROJECT_KEY
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up JDK 17
+        uses: actions/setup-java@v2
+        with:
+          java-version: "17"
+          distribution: "temurin"
+          cache: maven
+      - name: Build model
+        project: av-devops2024/model
+        build-command: mvn install
+      - name: Build with Maven cloud
+        run: mvn -B verify sonar:sonar -Dsonar.projectKey=$PROJECT_KEY -Dsonar.organization=accommodation
+        env:
+          SONAR_TOKEN: ${{ secrets.SONNAR_TOKEN }}
