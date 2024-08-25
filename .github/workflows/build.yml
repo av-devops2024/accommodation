@@ -10,17 +10,23 @@ on:
       - main
       - develop
 jobs:
-  sonarcloud:
-    name: SonarCloud
+  build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v2
+      - name: Set up JDK 17
+        uses: actions/setup-java@v2
         with:
-          fetch-depth: 0
-      - name: SonarCloud Scan
-        uses: SonarSource/sonarcloud-github-action@master
+          java-version: "17"
+          distribution: "temurin"
+          cache: maven
+      - name: Build model
+        uses: actions/checkout@v3
+        with:
+          repository: av-devops2024/model
+          token: ${{ secrets.PAT_TOKEN }}
+          run: mvn install
+      - name: Build Accommodation
+        run: mvn -B validate sonar:sonar -Dsonar.projectKey=$PROJECT_KEY -Dsonar.organization=accommodation
         env:
           SONAR_TOKEN: ${{ secrets.SONNAR_TOKEN }}
-      - name: Maven validate
-          run: mvn validate sonar:sonar -Dsonar.organization=accommodation -Dsonar.projectKey=$PROJECT_KEY
-  
