@@ -48,7 +48,7 @@ jobs:
           run: mvn -B validate sonar:sonar -Dsonar.projectKey=$PROJECT_KEY -Dsonar.organization=accommodation
 
       - name: Sonar check
-        run: mvn -B verify sonar:sonar -Dsonar.projectKey=$PROJECT_KEY -Dsonar.organization=accommodation
+        run: mvn -B validate sonar:sonar -Dsonar.projectKey=$PROJECT_KEY -Dsonar.organization=accommodation
         env:
           SONAR_TOKEN: ${{ secrets.SONNAR_TOKEN }}
 
