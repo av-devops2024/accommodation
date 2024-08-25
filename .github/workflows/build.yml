@@ -12,6 +12,8 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      SONAR_TOKEN: ${{ secrets.SONNAR_TOKEN }}
     steps:
       - uses: actions/checkout@v2
       - name: Set up JDK 17
@@ -47,8 +49,6 @@ jobs:
           repository: av-devops2024/accommodation
           token: ${{ secrets.PAT_TOKEN }}
           run: mvn -B validate sonar:sonar -Dsonar.projectKey=$PROJECT_KEY -Dsonar.organization=accommodation
-          env:
-            SONAR_TOKEN: ${{ secrets.SONNAR_TOKEN }}
 
       - name: Stop Spring Boot application
         uses: actions/checkout@v3
