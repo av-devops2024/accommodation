@@ -33,7 +33,7 @@ jobs:
           cache: maven
       - name: Build model
         project: av-devops2024/model
-        build-command: mvn install
+        run: mvn install
       - name: Build with Maven cloud
         run: mvn -B verify sonar:sonar -Dsonar.projectKey=$PROJECT_KEY -Dsonar.organization=accommodation
         env:
