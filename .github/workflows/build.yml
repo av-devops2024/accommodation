@@ -42,6 +42,7 @@ jobs:
           sleep 60  # Wait for the application to start
 
       - name: Switch back to Accommodation
+        uses: actions/checkout@v2
         with:
           repository: av-devops2024/accommodation
           token: ${{ secrets.PAT_TOKEN }}
@@ -50,6 +51,7 @@ jobs:
             SONAR_TOKEN: ${{ secrets.SONNAR_TOKEN }}
 
       - name: Stop Spring Boot application
+        uses: actions/checkout@v3
         with:
           repository: av-devops2024/notification
           token: ${{ secrets.PAT_TOKEN }}
