@@ -84,11 +84,7 @@ jobs:
             sleep 60  # Wait for the application to start
 
       - name: Validate Accommodation
-        uses: actions/checkout@v2
-        with:
-          repository: av-devops2024/accommodation
-          token: ${{ secrets.PAT_TOKEN }}
-          run: mvn -B validate -Dsonar.projectKey=$PROJECT_KEY -Dsonar.organization=accommodation
+        run: mvn -B validate -Dsonar.projectKey=$PROJECT_KEY -Dsonar.organization=accommodation
 
       - name: Stop Spring Boot application
         uses: actions/checkout@v2
