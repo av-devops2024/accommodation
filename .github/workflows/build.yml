@@ -23,26 +23,21 @@ jobs:
           distribution: "temurin"
           cache: maven
       - name: Build model
-        uses: actions/checkout@v3
+        uses: actions/checkout@v2
         with:
           repository: av-devops2024/model
           token: ${{ secrets.PAT_TOKEN }}
           path: model-repo
           run: mvn install
-      - name: Build notification
-        uses: actions/checkout@v3
+
+      - name: Start Spring Boot application
         with:
           repository: av-devops2024/notifications
           ref: develop
           token: ${{ secrets.PAT_TOKEN }}
-          path: notification-repo
-          run: mvn install
-      - name: Build with Maven
-        run: mvn clean install
-      - name: Start Spring Boot application
-        run: |
-          mvn spring-boot:run &
-          sleep 60  # Wait for the application to start
+          run: |
+            mvn spring-boot:run &
+            sleep 60  # Wait for the application to start
 
       - name: Switch back to Accommodation
         uses: actions/checkout@v2
@@ -52,7 +47,7 @@ jobs:
           run: mvn -B validate sonar:sonar -Dsonar.projectKey=$PROJECT_KEY -Dsonar.organization=accommodation
 
       - name: Stop Spring Boot application
-        uses: actions/checkout@v3
+        uses: actions/checkout@v2
         with:
           repository: av-devops2024/notification
           token: ${{ secrets.PAT_TOKEN }}
