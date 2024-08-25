@@ -41,8 +41,9 @@ jobs:
           mvn spring-boot:run &
           sleep 60  # Wait for the application to start
 
-      - name: Build Accommodation - switch back
+      - name: Switch back to Accommodation
         uses: actions/checkout@v2
+      - name: Build Accommodation
         run: mvn -B validate sonar:sonar -Dsonar.projectKey=$PROJECT_KEY -Dsonar.organization=accommodation
         env:
           SONAR_TOKEN: ${{ secrets.SONNAR_TOKEN }}
