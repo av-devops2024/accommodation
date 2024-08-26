@@ -1,5 +1,6 @@
 package com.devops.accommodation.controller;
 
+import com.devops.accommodation.dto.request.PriceRequest;
 import com.devops.accommodation.service.interfaces.IPriceService;
 import ftn.devops.dto.PriceDTO;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,19 +18,19 @@ public class PriceController {
 
     @PostMapping("/add/{accommodationId}")
     @ResponseStatus(HttpStatus.OK)
-    public List<PriceDTO> addPrice(@PathVariable int accommodationId, @RequestBody PriceDTO priceDTO){
-        return priceService.addPrice(accommodationId, priceDTO);
+    public PriceDTO addPrice(@PathVariable Long accommodationId, @RequestBody PriceRequest priceRequest){
+        return priceService.addPrice(accommodationId, priceRequest);
     }
 
     @PostMapping("/update/{accommodationId}")
     @ResponseStatus(HttpStatus.OK)
-    public List<PriceDTO> updatePrice(@PathVariable int accommodationId, @RequestBody PriceDTO priceDTO){
+    public List<PriceDTO> updatePrice(@PathVariable Long accommodationId, @RequestBody PriceDTO priceDTO){
         return priceService.updatePrice(accommodationId, priceDTO);
     }
 
     @GetMapping("{accommodationId}")
     @ResponseStatus(HttpStatus.OK)
-    public List<PriceDTO> getPrice(@PathVariable long accommodationId){
+    public List<PriceDTO> getPrice(@PathVariable Long accommodationId){
         return priceService.getPrices(accommodationId);
     }
 
@@ -40,7 +41,7 @@ public class PriceController {
     }
     @DeleteMapping("{accommodationId}")
     @ResponseStatus(HttpStatus.OK)
-    public List<PriceDTO> deleteAvailabilitySlot(@PathVariable int accommodationId,@RequestBody PriceDTO priceDTO) {
+    public List<PriceDTO> deleteAvailabilitySlot(@PathVariable Long accommodationId,@RequestBody PriceDTO priceDTO) {
         return priceService.deletePrices(accommodationId, priceDTO);
     }
 }

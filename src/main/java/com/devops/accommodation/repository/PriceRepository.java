@@ -10,7 +10,7 @@ import java.util.Optional;
 public interface PriceRepository extends JpaRepository<Price, Long> {
     List<Price> findByAccommodation_IdAndDeletedFalseOrderByStartDateAsc(long accommodationId);
 
-    List<Price> findByAccommodation_IdAndDeletedFalseAndEndDateGreaterThanOrderByStartDateAsc(long accommodationId, LocalDateTime endDate);
+    List<Price> findByAccommodation_IdAndDeletedFalseAndEndDateGreaterThanOrderByStartDateAsc(Long accommodationId, LocalDateTime endDate);
 
     Optional<Price> findByStartDateLessThanEqualAndEndDateGreaterThanEqual(LocalDateTime startDate, LocalDateTime endDate);
 

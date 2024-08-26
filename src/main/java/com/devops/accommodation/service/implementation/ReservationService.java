@@ -1,6 +1,7 @@
 package com.devops.accommodation.service.implementation;
 
 import com.devops.accommodation.aspect.TrackExecutionTime;
+import com.devops.accommodation.dto.response.HostFutureReservationResponse;
 import com.devops.accommodation.exception.ActionNotAllowedException;
 import com.devops.accommodation.exception.InvalidRelationshipException;
 import com.devops.accommodation.repository.ReservationRepository;
@@ -49,7 +50,7 @@ public class ReservationService implements IReservationService {
 
     @Override
     public boolean hasApprovedReservationInside(long accommodationId, LocalDateTime fromDate, LocalDateTime toDate) {
-        return !reservationRepository
+        return reservationRepository
                 .existsByAccommodation_IdAndStartDateGreaterThanEqualAndEndDateLessThanEqualAndCancelledFalseAndApprovedTrueAndDeletedFalse(accommodationId, fromDate, toDate);
     }
 
@@ -196,6 +197,24 @@ public class ReservationService implements IReservationService {
             throw new InvalidRelationshipException(Constants.INVALID_ACCOMMODATION_HOST_RELATIONSHIP);
         }
         return getHostReservationDTOs(reservationRepository.findByAccommodation_IdAndStartDateAfterAndApprovedTrueAndDeletedFalseAndCancelledFalse(accommodationId, LocalDateTime.now()));
+    }
+
+    @Override
+    public HostFutureReservationResponse getFutureReservationsForHost(User user, Long accommodationId) {
+        List<LocalDateTime> dates = new ArrayList<>();
+        List<Reservation> reservations = reservationRepository.findByAccommodationIdAndCancelledFalseAndDeletedFalseAndApprovedTrueAndStartDateAfter(accommodationId, LocalDateTime.now());
+        for(Reservation reservation : reservations) {
+            LocalDateTime startDate = reservation.getStartDate();
+            LocalDateTime endDate = reservation.getEndDate();
+
+            for (LocalDateTime date = startDate; !date.isAfter(endDate); date = date.plusDays(1)) {
+                if(!dates.contains(date)) {
+                    dates.add(date);
+                }
+            }
+        }
+
+        return new HostFutureReservationResponse(dates);
     }
 
     @Override

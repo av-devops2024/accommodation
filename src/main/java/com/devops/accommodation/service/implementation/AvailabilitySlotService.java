@@ -1,5 +1,6 @@
 package com.devops.accommodation.service.implementation;
 
+import com.devops.accommodation.dto.request.AvailabilitySlotRequest;
 import com.devops.accommodation.exception.ActionNotAllowedException;
 import com.devops.accommodation.aspect.TrackExecutionTime;
 import com.devops.accommodation.exception.EntityNotFoundException;
@@ -40,40 +41,40 @@ public class AvailabilitySlotService implements IAvailabilitySlotService {
     private IReservationService reservationService;
 
     @Override
-    @TrackExecutionTime
-    public List<AvailabilitySlotDTO> addAvailabilitySlot(User user, long accommodationId, AvailabilitySlotDTO availabilitySlotDTO) {
-        logClientService.sendLog(LogType.INFO, "Add availability slot", availabilitySlotDTO);
-        DateUtils.checkDateValidity(availabilitySlotDTO.getStartDate(), availabilitySlotDTO.getEndDate());
-        if (reservationService.hasApprovedReservationIntersect(accommodationId, availabilitySlotDTO.getStartDate(), availabilitySlotDTO.getEndDate()))
+//    @TrackExecutionTime
+    public List<AvailabilitySlotDTO> addAvailabilitySlot(User user, long accommodationId, AvailabilitySlotRequest availabilitySlotRequest) {
+//        logClientService.sendLog(LogType.INFO, "Add availability slot", availabilitySlotDTO);
+        DateUtils.checkDateValidity(availabilitySlotRequest.getStartDate(), availabilitySlotRequest.getEndDate());
+        if (reservationService.hasApprovedReservationIntersect(accommodationId, availabilitySlotRequest.getStartDate(), availabilitySlotRequest.getEndDate()))
             throw new ActionNotAllowedException(Constants.ACTION_NOT_ALLOWED_BECAUSE_CONTAINS_RESERVATION);
 
         User host = hostService.findById(user.getId());
         List<Accommodation> result = host.getAccommodations().stream().filter(accommodation -> accommodation.getId() == accommodationId).collect(Collectors.toList());
         if (result.size() != 1){
-            logClientService.sendLog(LogType.WARN, "Accommodation does not belong to host", new Object[]{host.getId(), accommodationId});
+//            logClientService.sendLog(LogType.WARN, "Accommodation does not belong to host", new Object[]{host.getId(), accommodationId});
             throw new InvalidRelationshipException(Constants.INVALID_ACCOMMODATION_HOST_RELATIONSHIP);
         }
         Accommodation accommodation = result.get(0);
         List<AvailabilitySlot> availabilitySlots = availabilitySlotRepository
                 .findByAccommodation_IdAndValidAndEndDateGreaterThanOrderByStartDateAsc(accommodationId, true, LocalDateTime.now());
 
-        availabilitySlots = insertNewAvailabilitySlot(availabilitySlotDTO, accommodation, availabilitySlots);
-        logClientService.sendLog(LogType.INFO, "Added new availability slot", null);
+        availabilitySlots = insertNewAvailabilitySlot(availabilitySlotRequest, accommodation, availabilitySlots);
+//        logClientService.sendLog(LogType.INFO, "Added new availability slot", null);
 
         return getAvailabilitySlotDTOs(availabilitySlots);
     }
 
     @Override
-    @TrackExecutionTime
+//    @TrackExecutionTime
     public List<AvailabilitySlotDTO> getAvailabilitySlots(long accommodationId) {
         List<AvailabilitySlot> availabilitySlots = availabilitySlotRepository.findByAccommodation_IdAndValidOrderByStartDateAsc(accommodationId, true);
         return getAvailabilitySlotDTOs(availabilitySlots);
     }
 
     @Override
-    @TrackExecutionTime
+//    @TrackExecutionTime
     public List<AvailabilitySlotDTO> getActiveAvailabilitySlots(long accommodationId) {
-        logClientService.sendLog(LogType.INFO, "Get active availability slots", accommodationId);
+//        logClientService.sendLog(LogType.INFO, "Get active availability slots", accommodationId);
         List<AvailabilitySlot> availabilitySlots = availabilitySlotRepository
                 .findByAccommodation_IdAndValidAndEndDateGreaterThanOrderByStartDateAsc(accommodationId, true, LocalDateTime.now());
         return getAvailabilitySlotDTOs(availabilitySlots);
@@ -97,14 +98,14 @@ public class AvailabilitySlotService implements IAvailabilitySlotService {
 
     @Override
     public List<AvailabilitySlotDTO> deleteAvailabilitySlot(long accommodationId, long availabilitySlotId) {
-        logClientService.sendLog(LogType.INFO, "Delete availability slot", new Object[]{accommodationId, availabilitySlotId});
+//        logClientService.sendLog(LogType.INFO, "Delete availability slot", new Object[]{accommodationId, availabilitySlotId});
         AvailabilitySlot availabilitySlot = availabilitySlotRepository.findById(availabilitySlotId)
                 .orElseThrow(() -> {
-                    logClientService.sendLog(LogType.WARN, "Delete availability slot not found", new Object[]{accommodationId, availabilitySlotId});
+//                    logClientService.sendLog(LogType.WARN, "Delete availability slot not found", new Object[]{accommodationId, availabilitySlotId});
                     throw new EntityNotFoundException(Constants.AVAILABILITY_SLOT_NOT_FOUND);
                 });
         if (accommodationId != availabilitySlot.getAccommodation().getId()){
-            logClientService.sendLog(LogType.WARN, "Delete availability slot not matches with accommodation", new Object[]{accommodationId, availabilitySlotId});
+//            logClientService.sendLog(LogType.WARN, "Delete availability slot not matches with accommodation", new Object[]{accommodationId, availabilitySlotId});
             throw new EntityNotFoundException(Constants.INVALID_AVAILABILITY_SLOT_ACCOMMODATION_RELATIONSHIP);
         }
         availabilitySlot.setValid(false);
@@ -119,40 +120,41 @@ public class AvailabilitySlotService implements IAvailabilitySlotService {
         return slots;
     }
 
-    private List<AvailabilitySlot> insertNewAvailabilitySlot(AvailabilitySlotDTO availabilitySlotDTO, Accommodation accommodation, List<AvailabilitySlot> availabilitySlots) {
+    private List<AvailabilitySlot> insertNewAvailabilitySlot(AvailabilitySlotRequest availabilitySlotRequest, Accommodation accommodation, List<AvailabilitySlot> availabilitySlots) {
         for (AvailabilitySlot availabilitySlot : availabilitySlots){
-            boolean startInbetween = isStartDateInbetween(availabilitySlotDTO, availabilitySlot);
-            boolean endInbetween = isEndDateInbetween(availabilitySlotDTO, availabilitySlot);
+            boolean startInbetween = isStartDateInbetween(availabilitySlotRequest, availabilitySlot);
+            boolean endInbetween = isEndDateInbetween(availabilitySlotRequest, availabilitySlot);
             if (startInbetween && endInbetween)
                 return availabilitySlots;
             if (startInbetween){
-                availabilitySlot.setEndDate(availabilitySlotDTO.getStartDate());
+                availabilitySlot.setEndDate(availabilitySlotRequest.getStartDate());
                 availabilitySlotRepository.save(availabilitySlot);
                 break;
             }
             if (endInbetween) {
-                availabilitySlot.setStartDate(availabilitySlotDTO.getEndDate());
+                availabilitySlot.setStartDate(availabilitySlotRequest.getEndDate());
                 availabilitySlotRepository.save(availabilitySlot);
                 break;
             }
         }
         AvailabilitySlot newAvailabilitySlot = new AvailabilitySlot(
-                availabilitySlotDTO.getStartDate(),
-                availabilitySlotDTO.getEndDate(),
+                availabilitySlotRequest.getStartDate(),
+                availabilitySlotRequest.getEndDate(),
                 accommodation
         );
         availabilitySlotRepository.save(newAvailabilitySlot);
+//        newAvailabilitySlot.setStartDate();
         availabilitySlots.add(newAvailabilitySlot);
         return availabilitySlots;
     }
 
-    private boolean isStartDateInbetween(AvailabilitySlotDTO availabilitySlotDTO, AvailabilitySlot availabilitySlot) {
-        return (availabilitySlot.getStartDate().isBefore(availabilitySlotDTO.getStartDate())
-                && availabilitySlot.getEndDate().isAfter(availabilitySlotDTO.getStartDate()));
+    private boolean isStartDateInbetween(AvailabilitySlotRequest availabilitySlotRequest, AvailabilitySlot availabilitySlot) {
+        return (availabilitySlot.getStartDate().isBefore(availabilitySlotRequest.getStartDate())
+                && availabilitySlot.getEndDate().isAfter(availabilitySlotRequest.getStartDate()));
     }
 
-    private boolean isEndDateInbetween(AvailabilitySlotDTO availabilitySlotDTO, AvailabilitySlot availabilitySlot) {
-        return (availabilitySlot.getStartDate().isBefore(availabilitySlotDTO.getEndDate())
-                && availabilitySlot.getEndDate().isAfter(availabilitySlotDTO.getEndDate()));
+    private boolean isEndDateInbetween(AvailabilitySlotRequest availabilitySlotRequest, AvailabilitySlot availabilitySlot) {
+        return (availabilitySlot.getStartDate().isBefore(availabilitySlotRequest.getEndDate())
+                && availabilitySlot.getEndDate().isAfter(availabilitySlotRequest.getEndDate()));
     }
 }
