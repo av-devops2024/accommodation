@@ -104,14 +104,20 @@ public class AccommodationService implements IAccommodationService {
 
     @Override
     public List<AccommodationDTO> searchAccommodation(SearchRequest searchRequest) {
-        List<Accommodation> accommodations = filterAccommodationByGuestNumber(searchRequest.getNumberOfGuests());
-        accommodations = filterAccommodationByLocation(accommodations, searchRequest.getLocationRequest());
-        accommodations = filterAccommodationByAvailability(accommodations, searchRequest.getStartDate(), searchRequest.getEndDate());
-        return getListOfAccommodationDTO(accommodations)
-                .stream().map(x->
-                        new AccommodationResultResponse(x, reservationService.countPrice(x.getId(),
-                                searchRequest.getStartDate(), searchRequest.getEndDate(), searchRequest.getNumberOfGuests()))
-                ).collect(Collectors.toList());
+        List<Accommodation> accommodations = accommodationRepository.findAll();
+        if (searchRequest.getNumberOfGuests() > 0)
+            accommodations = filterAccommodationByGuestNumber(accommodations, searchRequest.getNumberOfGuests());
+        if (searchRequest.getLocationRequest() != null)
+            accommodations = filterAccommodationByLocation(accommodations, searchRequest.getLocationRequest());
+        if (searchRequest.getStartDate() != null && searchRequest.getEndDate() != null) {
+            accommodations = filterAccommodationByAvailability(accommodations, searchRequest.getStartDate(), searchRequest.getEndDate());
+            return getListOfAccommodationDTO(accommodations)
+                    .stream().map(x ->
+                            new AccommodationResultResponse(x, reservationService.countPrice(x.getId(),
+                                    searchRequest.getStartDate(), searchRequest.getEndDate(), searchRequest.getNumberOfGuests()))
+                    ).collect(Collectors.toList());
+        }
+        return getListOfAccommodationDTO(accommodations);
     }
 
     private List<Accommodation> filterAccommodationByLocation(List<Accommodation> accommodations, LocationRequest locationRequest) {
@@ -151,8 +157,13 @@ public class AccommodationService implements IAccommodationService {
         return hasAvailability && !reservationService.hasApprovedReservationIntersect(acc.getId(), startDate, endDate);
     }
 
-    private List<Accommodation> filterAccommodationByGuestNumber(int numberOfGuests) {
-        return accommodationRepository.findByMaxNumberOfGuestsGreaterThanEqualAndMinNumberOfGuestsLessThanEqual(numberOfGuests, numberOfGuests);
+    private List<Accommodation> filterAccommodationByGuestNumber(List<Accommodation> accommodations, int numberOfGuests) {
+        List<Accommodation> result = new ArrayList<>();
+        accommodations.forEach(acc -> {
+            if (acc.getMinNumberOfGuests() <= numberOfGuests && acc.getMaxNumberOfGuests() >= numberOfGuests)
+                result.add(acc);
+        });
+        return result;
     }
 
     private List<AccommodationDTO> getListOfAccommodationDTO(List<Accommodation> accommodations) {
