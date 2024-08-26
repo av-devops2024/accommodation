@@ -1,5 +1,6 @@
 package com.devops.accommodation.controller;
 
+import com.devops.accommodation.dto.request.AvailabilitySlotRequest;
 import com.devops.accommodation.service.interfaces.IAvailabilitySlotService;
 import com.devops.accommodation.service.interfaces.IUserService;
 import ftn.devops.db.User;
@@ -21,12 +22,11 @@ public class AvailabilitySlotController {
     @Autowired
     private IUserService userService;
 
-    @PostMapping("{accommodationId}")
+    @PostMapping()
     @ResponseStatus(HttpStatus.OK)
-    public List<AvailabilitySlotDTO> addAvailabilitySlot(HttpServletRequest request,
-                                                         @PathVariable int accommodationId, @RequestBody AvailabilitySlotDTO availabilitySlotDTO){
+    public List<AvailabilitySlotDTO> addAvailabilitySlot(@RequestBody AvailabilitySlotRequest availabilitySlotRequest, HttpServletRequest request){
         User user = userService.getUser(request);
-        return availabilitySlotService.addAvailabilitySlot(user, accommodationId, availabilitySlotDTO);
+        return availabilitySlotService.addAvailabilitySlot(user, availabilitySlotRequest.getAccommodationId(), availabilitySlotRequest);
     }
 
     @GetMapping("{accommodationId}")

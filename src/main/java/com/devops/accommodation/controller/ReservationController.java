@@ -1,5 +1,6 @@
 package com.devops.accommodation.controller;
 
+import com.devops.accommodation.dto.response.HostFutureReservationResponse;
 import com.devops.accommodation.service.interfaces.IReservationService;
 import com.devops.accommodation.service.interfaces.IUserService;
 import ftn.devops.db.User;
@@ -43,5 +44,13 @@ public class ReservationController {
                                                            HttpServletRequest request){
         User user = userService.getUser(request);
         return reservationService.getReservationsForHost(user, accommodationId);
+    }
+
+    @GetMapping("/futureReservations/{accommodationId}")
+    @ResponseStatus(HttpStatus.OK)
+    public HostFutureReservationResponse getFutureReservationsForHost(@PathVariable Long accommodationId,
+                                                                      HttpServletRequest request){
+        User user = userService.getUser(request);
+        return reservationService.getFutureReservationsForHost(user, accommodationId);
     }
 }

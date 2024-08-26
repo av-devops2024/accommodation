@@ -34,4 +34,5 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
     List<Reservation> findByAccommodation_IdAndStartDateBetweenAndApprovedTrueAndCancelledFalseAndDeletedFalse(Long id, LocalDateTime startDateStart, LocalDateTime startDateEnd);
     List<Reservation> findByAccommodation_IdAndEndDateBetweenAndApprovedTrueAndCancelledFalseAndDeletedFalse(Long id, LocalDateTime startDateStart, LocalDateTime startDateEnd);
     List<Reservation> findByAccommodation_IdAndStartDateLessThanEqualAndEndDateGreaterThanEqualAndApprovedTrueAndCancelledFalseAndDeletedFalse(Long id, LocalDateTime startDate, LocalDateTime endDate);
+    List<Reservation> findByAccommodationIdAndCancelledFalseAndDeletedFalseAndApprovedTrueAndStartDateAfter(Long accommodationId, LocalDateTime date);
 }
