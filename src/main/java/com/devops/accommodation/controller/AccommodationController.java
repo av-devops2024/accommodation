@@ -1,5 +1,6 @@
 package com.devops.accommodation.controller;
 
+import com.devops.accommodation.dto.response.AccommodationSearchResponse;
 import com.devops.accommodation.service.interfaces.IAccommodationService;
 import com.devops.accommodation.service.interfaces.IUserService;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -54,7 +55,7 @@ public class AccommodationController {
 
     @PostMapping("search")
     @ResponseStatus(HttpStatus.OK)
-    public List<AccommodationDTO> searchAccommodation(@RequestBody SearchRequest searchRequest) {
+    public List<AccommodationSearchResponse> searchAccommodation(@RequestBody SearchRequest searchRequest) {
         return accommodationService.searchAccommodation(searchRequest);
     }
 }
