@@ -1,5 +1,6 @@
 package com.devops.accommodation.service.implementation;
 
+import com.devops.accommodation.dto.response.AccommodationSearchResponse;
 import com.devops.accommodation.exception.EntityNotFoundException;
 import com.devops.accommodation.exception.InvalidImageException;
 import com.devops.accommodation.repository.AccommodationRepository;
@@ -13,6 +14,8 @@ import ftn.devops.dto.request.LocationRequest;
 import ftn.devops.dto.request.SearchRequest;
 import ftn.devops.dto.response.AccommodationDTO;
 import ftn.devops.dto.response.AccommodationResultResponse;
+import ftn.devops.dto.response.ImageDTO;
+import ftn.devops.dto.response.LocationDTO;
 import ftn.devops.enums.AccommodationBenefits;
 import ftn.devops.log.LogType;
 import org.hibernate.Hibernate;
@@ -23,6 +26,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -41,6 +45,8 @@ public class AccommodationService implements IAccommodationService {
     private IImageService imageService;
     @Autowired
     private IReservationService reservationService;
+    @Autowired
+    private PriceService priceService;
 
     @Override
     public AccommodationDTO addAccommodation(CreateAccommodationRequest accommodationDTO, User user){
@@ -103,7 +109,7 @@ public class AccommodationService implements IAccommodationService {
     }
 
     @Override
-    public List<AccommodationDTO> searchAccommodation(SearchRequest searchRequest) {
+    public List<AccommodationSearchResponse> searchAccommodation(SearchRequest searchRequest) {
         List<Accommodation> accommodations = accommodationRepository.findAll();
         if (searchRequest.getNumberOfGuests() > 0)
             accommodations = filterAccommodationByGuestNumber(accommodations, searchRequest.getNumberOfGuests());
@@ -111,13 +117,30 @@ public class AccommodationService implements IAccommodationService {
             accommodations = filterAccommodationByLocation(accommodations, searchRequest.getLocationRequest());
         if (searchRequest.getStartDate() != null && searchRequest.getEndDate() != null) {
             accommodations = filterAccommodationByAvailability(accommodations, searchRequest.getStartDate(), searchRequest.getEndDate());
-            return getListOfAccommodationDTO(accommodations)
-                    .stream().map(x ->
-                            new AccommodationResultResponse(x, reservationService.countPrice(x.getId(),
-                                    searchRequest.getStartDate(), searchRequest.getEndDate(), searchRequest.getNumberOfGuests()))
-                    ).collect(Collectors.toList());
         }
-        return getListOfAccommodationDTO(accommodations);
+        List<AccommodationSearchResponse> responseList = new ArrayList<>();
+        for (Accommodation accommodation : accommodations) {
+            Price price = priceService.findByInterval(accommodation.getId(), searchRequest.getStartDate(), searchRequest.getEndDate());
+            AccommodationSearchResponse accommodationSearchResponse = new AccommodationSearchResponse();
+            accommodationSearchResponse.setId(accommodation.getId());
+            accommodationSearchResponse.setName(accommodation.getName());
+            accommodationSearchResponse.setBenefits(accommodation.getBenefits());
+            accommodationSearchResponse.setMinNumberOfGuests(accommodation.getMinNumberOfGuests());
+            accommodationSearchResponse.setMaxNumberOfGuests(accommodation.getMaxNumberOfGuests());
+            accommodationSearchResponse.setLocation(new LocationDTO(accommodation.getLocation()));
+            accommodationSearchResponse.setDailyPrice(price.getValue());
+            accommodationSearchResponse.setPriceType(price.getType().toString());
+            long numberOfNights = ChronoUnit.DAYS.between(searchRequest.getStartDate(), searchRequest.getEndDate());
+            accommodationSearchResponse.setTotalPrice(numberOfNights * price.getValue());
+            List<ImageDTO> images = new ArrayList();
+            accommodation.getImages().forEach((image) -> {
+                images.add(new ImageDTO(image));
+            });
+            accommodationSearchResponse.setImages(images);
+            responseList.add(accommodationSearchResponse);
+        }
+
+        return responseList;
     }
 
     private List<Accommodation> filterAccommodationByLocation(List<Accommodation> accommodations, LocationRequest locationRequest) {
