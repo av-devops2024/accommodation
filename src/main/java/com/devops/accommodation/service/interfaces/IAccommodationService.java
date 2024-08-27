@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import ftn.devops.db.Accommodation;
 import ftn.devops.db.User;
 import ftn.devops.dto.request.CreateAccommodationRequest;
+import ftn.devops.dto.request.SearchRequest;
 import ftn.devops.dto.response.AccommodationDTO;
 
 import java.io.IOException;
@@ -17,4 +18,6 @@ public interface IAccommodationService {
 
     Accommodation getAccommodationById(long id);
     List<AccommodationDTO> getAccommodations(Long userId) throws DataFormatException, IOException;
+
+    List<AccommodationDTO> searchAccommodation(SearchRequest searchRequest);
 }

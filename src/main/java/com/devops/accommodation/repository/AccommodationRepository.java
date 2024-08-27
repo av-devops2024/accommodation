@@ -9,4 +9,6 @@ import java.util.List;
 @Repository
 public interface AccommodationRepository extends JpaRepository<Accommodation, Long> {
     List<Accommodation> findAllByHostId(Long hostId);
+
+    List<Accommodation> findByMaxNumberOfGuestsGreaterThanEqualAndMinNumberOfGuestsLessThanEqual(int maxNumberOfGuests, int minNumberOfGuests);
 }
