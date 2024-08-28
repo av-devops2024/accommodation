@@ -1,6 +1,7 @@
 package com.devops.accommodation.service.implementation;
 
 import com.devops.accommodation.aspect.TrackExecutionTime;
+import com.devops.accommodation.dto.request.CreateReservationRequest;
 import com.devops.accommodation.dto.response.HostFutureReservationResponse;
 import com.devops.accommodation.exception.ActionNotAllowedException;
 import com.devops.accommodation.exception.InvalidRelationshipException;
@@ -16,6 +17,7 @@ import ftn.devops.db.Price;
 import ftn.devops.db.Reservation;
 import ftn.devops.db.User;
 import ftn.devops.dto.request.CreateReservationRequestDTO;
+import ftn.devops.dto.response.AccommodationDTO;
 import ftn.devops.dto.response.GuestReservationDTO;
 import ftn.devops.dto.response.HostReservationDTO;
 import ftn.devops.enums.NotificationType;
@@ -27,12 +29,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.zip.DataFormatException;
 
 @Service
 @Transactional
@@ -90,7 +94,7 @@ public class ReservationService implements IReservationService {
 
     @Override
     @TrackExecutionTime
-    public List<GuestReservationDTO> addReservationRequest(User guest, CreateReservationRequestDTO reservationRequest) {
+    public List<GuestReservationDTO> addReservationRequest(User guest, CreateReservationRequest reservationRequest) {
         logClientService.sendLog(LogType.INFO, "Add Reservation request", new Object[]{guest.getId(), reservationRequest});
         DateUtils.checkDateValidity(reservationRequest.getStartDate(), reservationRequest.getEndDate());
 
@@ -156,7 +160,7 @@ public class ReservationService implements IReservationService {
 
     @Override
     @TrackExecutionTime
-    public List<HostReservationDTO> acceptReservationRequest(User user, long reservationRequestId) {
+    public List<HostReservationDTO> acceptReservationRequest(User user, long reservationRequestId) throws DataFormatException, IOException {
         logClientService.sendLog(LogType.INFO, "Accept reservation", new Object[]{user.getId(), reservationRequestId});
         Reservation reservationRequest = findById(reservationRequestId);
         if (!Objects.equals(reservationRequest.getAccommodation().getHost().getId(), user.getId())){
@@ -180,7 +184,7 @@ public class ReservationService implements IReservationService {
                     }
                 });
         logClientService.sendNotification(reservationRequest.getGuest(), reservationRequest.getAccommodation(), reservationRequest, NotificationType.RESERVATION_ANSWER);
-        return getReservationRequestsForHost(user, reservationRequest.getAccommodation().getId());
+        return getReservationRequestsForHost(user);
     }
 
     @Override
@@ -193,14 +197,15 @@ public class ReservationService implements IReservationService {
 
     @Override
     @TrackExecutionTime
-    public List<HostReservationDTO> getReservationsForHost(User user, int accommodationId) {
-        logClientService.sendLog(LogType.INFO, "Get reservations for accommodation", new Object[]{user.getId(), accommodationId} );
-        Accommodation accommodation = accommodationService.getAccommodationById(accommodationId);
-        if (!Objects.equals(accommodation.getHost().getId(), user.getId())){
-            logClientService.sendLog(LogType.INFO, Constants.INVALID_ACCOMMODATION_HOST_RELATIONSHIP, new Object[]{user.getId(), accommodationId} );
-            throw new InvalidRelationshipException(Constants.INVALID_ACCOMMODATION_HOST_RELATIONSHIP);
+    public List<HostReservationDTO> getReservationsForHost(User user) throws DataFormatException, IOException {
+        logClientService.sendLog(LogType.INFO, "Get reservations for user", new Object[]{user.getId()} );
+        List<HostReservationDTO> reservationRequests = new ArrayList<>();
+        logClientService.sendLog(LogType.INFO, "Get reservation requests for use", new Object[]{user.getId()});
+        List<AccommodationDTO> accommodations = this.accommodationService.getAccommodations(user.getId());
+        for(AccommodationDTO accommodation : accommodations) {
+            reservationRequests.addAll(getHostReservationDTOs(reservationRepository.findByAccommodation_IdAndStartDateAfterAndApprovedTrueAndDeletedFalseAndCancelledFalse(accommodation.getId(), LocalDateTime.now())));
         }
-        return getHostReservationDTOs(reservationRepository.findByAccommodation_IdAndStartDateAfterAndApprovedTrueAndDeletedFalseAndCancelledFalse(accommodationId, LocalDateTime.now()));
+        return reservationRequests;
     }
 
     @Override
@@ -223,14 +228,14 @@ public class ReservationService implements IReservationService {
 
     @Override
     @TrackExecutionTime
-    public List<HostReservationDTO> getReservationRequestsForHost(User user, long accommodationId) {
-        logClientService.sendLog(LogType.INFO, "Get reservation requests for accommodation", new Object[]{user.getId(), accommodationId} );
-        Accommodation accommodation = accommodationService.getAccommodationById(accommodationId);
-        if (!Objects.equals(accommodation.getHost().getId(), user.getId())){
-            logClientService.sendLog(LogType.INFO, Constants.INVALID_ACCOMMODATION_HOST_RELATIONSHIP, new Object[]{user.getId(), accommodationId} );
-            throw new InvalidRelationshipException(Constants.INVALID_ACCOMMODATION_HOST_RELATIONSHIP);
+    public List<HostReservationDTO> getReservationRequestsForHost(User user) throws DataFormatException, IOException {
+        List<HostReservationDTO> reservationRequests = new ArrayList<>();
+        logClientService.sendLog(LogType.INFO, "Get reservation requests for use", new Object[]{user.getId()});
+        List<AccommodationDTO> accommodations = this.accommodationService.getAccommodations(user.getId());
+        for(AccommodationDTO accommodation : accommodations) {
+            reservationRequests.addAll(getHostReservationDTOs(reservationRepository.findByAccommodation_IdAndStartDateAfterAndApprovedFalseAndDeletedFalse(accommodation.getId(), LocalDateTime.now())));
         }
-        return getHostReservationDTOs(reservationRepository.findByAccommodation_IdAndStartDateAfterAndApprovedFalseAndDeletedFalse(accommodationId, LocalDateTime.now()));
+        return reservationRequests;
     }
 
     @Override
@@ -273,7 +278,7 @@ public class ReservationService implements IReservationService {
         throw new ActionNotAllowedException(Constants.NOT_EXISTING_PRICE_TYPE);
     }
 
-    private Reservation createReservation(CreateReservationRequestDTO reservationRequest,
+    private Reservation createReservation(CreateReservationRequest reservationRequest,
                                    Accommodation accommodation,
                                    User guest,
                                    double price,
