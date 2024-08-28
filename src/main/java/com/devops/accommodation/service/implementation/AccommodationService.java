@@ -1,23 +1,23 @@
 package com.devops.accommodation.service.implementation;
 
+import com.devops.accommodation.dto.response.AccommodationSearchResponse;
 import com.devops.accommodation.exception.EntityNotFoundException;
 import com.devops.accommodation.exception.InvalidImageException;
 import com.devops.accommodation.repository.AccommodationRepository;
-import com.devops.accommodation.service.interfaces.IAccommodationService;
-import com.devops.accommodation.service.interfaces.IImageService;
-import com.devops.accommodation.service.interfaces.ILocationService;
-import com.devops.accommodation.service.interfaces.IUserService;
+import com.devops.accommodation.service.interfaces.*;
 import com.devops.accommodation.utils.Constants;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import ftn.devops.db.Accommodation;
-import ftn.devops.db.Image;
-import ftn.devops.db.Location;
-import ftn.devops.db.User;
+import ftn.devops.db.*;
 import ftn.devops.dto.request.CreateAccommodationRequest;
 import ftn.devops.dto.request.LocationRequest;
+import ftn.devops.dto.request.SearchRequest;
 import ftn.devops.dto.response.AccommodationDTO;
+import ftn.devops.dto.response.AccommodationResultResponse;
+import ftn.devops.dto.response.ImageDTO;
+import ftn.devops.dto.response.LocationDTO;
 import ftn.devops.enums.AccommodationBenefits;
+import ftn.devops.enums.PriceType;
 import ftn.devops.log.LogType;
 import org.hibernate.Hibernate;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,9 +26,11 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.zip.DataFormatException;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional
@@ -43,7 +45,9 @@ public class AccommodationService implements IAccommodationService {
     @Autowired
     private IImageService imageService;
     @Autowired
-    private IUserService userService;
+    private IReservationService reservationService;
+    @Autowired
+    private PriceService priceService;
 
     @Override
     public AccommodationDTO addAccommodation(CreateAccommodationRequest accommodationDTO, User user){
@@ -103,6 +107,91 @@ public class AccommodationService implements IAccommodationService {
     @Override
     public List<AccommodationDTO> getAccommodations(Long userId) {
         return getListOfAccommodationDTO(this.accommodationRepository.findAllByHostId(userId));
+    }
+
+    @Override
+    public List<AccommodationSearchResponse> searchAccommodation(SearchRequest searchRequest) {
+        List<Accommodation> accommodations = accommodationRepository.findAll();
+        if (searchRequest.getNumberOfGuests() > 0)
+            accommodations = filterAccommodationByGuestNumber(accommodations, searchRequest.getNumberOfGuests());
+        if (searchRequest.getLocationRequest() != null)
+            accommodations = filterAccommodationByLocation(accommodations, searchRequest.getLocationRequest());
+        if (searchRequest.getStartDate() != null && searchRequest.getEndDate() != null) {
+            accommodations = filterAccommodationByAvailability(accommodations, searchRequest.getStartDate(), searchRequest.getEndDate());
+        }
+        List<AccommodationSearchResponse> responseList = new ArrayList<>();
+        for (Accommodation accommodation : accommodations) {
+            Price price = priceService.findByInterval(accommodation.getId(), searchRequest.getStartDate(), searchRequest.getEndDate());
+            AccommodationSearchResponse accommodationSearchResponse = new AccommodationSearchResponse();
+            accommodationSearchResponse.setId(accommodation.getId());
+            accommodationSearchResponse.setName(accommodation.getName());
+            accommodationSearchResponse.setBenefits(accommodation.getBenefits());
+            accommodationSearchResponse.setMinNumberOfGuests(accommodation.getMinNumberOfGuests());
+            accommodationSearchResponse.setMaxNumberOfGuests(accommodation.getMaxNumberOfGuests());
+            accommodationSearchResponse.setLocation(new LocationDTO(accommodation.getLocation()));
+            accommodationSearchResponse.setDailyPrice(price.getValue());
+            accommodationSearchResponse.setPriceType(price.getType().toString());
+            long numberOfNights = ChronoUnit.DAYS.between(searchRequest.getStartDate(), searchRequest.getEndDate());
+            if(price.getType().equals(PriceType.PER_ACCOMMODATION)){
+                accommodationSearchResponse.setTotalPrice(numberOfNights * price.getValue());
+            } else {
+                accommodationSearchResponse.setTotalPrice(searchRequest.getNumberOfGuests() * numberOfNights * price.getValue());
+            }
+            List<ImageDTO> images = new ArrayList();
+            accommodation.getImages().forEach((image) -> {
+                images.add(new ImageDTO(image));
+            });
+            accommodationSearchResponse.setImages(images);
+            responseList.add(accommodationSearchResponse);
+        }
+
+        return responseList;
+    }
+
+    private List<Accommodation> filterAccommodationByLocation(List<Accommodation> accommodations, LocationRequest locationRequest) {
+        List<Accommodation> result = new ArrayList<>();
+        accommodations.forEach(acc -> {
+            if (nearLocation(acc, locationRequest))
+                result.add(acc);
+        });
+        return result;
+    }
+
+    private boolean nearLocation(Accommodation accommodation, LocationRequest locationRequest) {
+        Location location = accommodation.getLocation();
+        return location != null && Math.pow((locationRequest.getLatitude() - location.getLatitude()), 2) + Math.pow((locationRequest.getLongitude() - location.getLongitude()), 2) < 100;
+    }
+
+    private List<Accommodation> filterAccommodationByAvailability(List<Accommodation> accommodations, LocalDateTime startDate, LocalDateTime endDate) {
+        List<Accommodation> result = new ArrayList<>();
+        accommodations.forEach(acc -> {
+            if (hasAvailability(acc, startDate, endDate))
+                result.add(acc);
+        });
+        return result;
+    }
+
+    private boolean hasAvailability(Accommodation acc, LocalDateTime startDate, LocalDateTime endDate) {
+        boolean hasAvailability = false;
+        // is available
+        for (AvailabilitySlot availabilitySlot: acc.getAvailabilitySlotList()){
+            if ((availabilitySlot.getStartDate().isBefore(startDate) || availabilitySlot.getStartDate().isEqual(startDate)) &&
+                    (availabilitySlot.getEndDate().isAfter(endDate) || availabilitySlot.getEndDate().isEqual(endDate))) {
+                hasAvailability = true;
+                break;
+            }
+        }
+        // has no reservation
+        return hasAvailability && !reservationService.hasApprovedReservationIntersect(acc.getId(), startDate, endDate);
+    }
+
+    private List<Accommodation> filterAccommodationByGuestNumber(List<Accommodation> accommodations, int numberOfGuests) {
+        List<Accommodation> result = new ArrayList<>();
+        accommodations.forEach(acc -> {
+            if (acc.getMinNumberOfGuests() <= numberOfGuests && acc.getMaxNumberOfGuests() >= numberOfGuests)
+                result.add(acc);
+        });
+        return result;
     }
 
     private List<AccommodationDTO> getListOfAccommodationDTO(List<Accommodation> accommodations) {

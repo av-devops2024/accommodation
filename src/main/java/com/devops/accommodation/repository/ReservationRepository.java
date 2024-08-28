@@ -27,7 +27,7 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
     long countByGuest_IdAndDeletedFalseAndApprovedTrueAndCancelledTrue(Long id);
 
     /* reservation */
-    List<Reservation> findByAccommodation_IdAndStartDateAfterAndApprovedTrueAndDeletedFalseAndCancelledFalse(int accommodationId, LocalDateTime now);
+    List<Reservation> findByAccommodation_IdAndStartDateAfterAndApprovedTrueAndDeletedFalseAndCancelledFalse(Long accommodationId, LocalDateTime now);
 
     List<Reservation> findByGuest_IdAndStartDateAfterAndApprovedTrueAndDeletedFalseAndCancelledFalse(long l, LocalDateTime now);
 

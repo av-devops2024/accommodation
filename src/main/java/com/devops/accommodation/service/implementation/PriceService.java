@@ -111,8 +111,8 @@ public class PriceService implements IPriceService {
     }
 
     @Override
-    public Price findByInterval(LocalDateTime startDate, LocalDateTime endDate) {
-        return priceRepository.findByStartDateLessThanEqualAndEndDateGreaterThanEqual(startDate, endDate)
+    public Price findByInterval(long accommodationId, LocalDateTime startDate, LocalDateTime endDate) {
+        return priceRepository.findByAccommodation_IdAndStartDateLessThanEqualAndEndDateGreaterThanEqual(accommodationId, startDate, endDate)
                 .orElseThrow(() -> {throw new EntityNotFoundException(Constants.PRICE_RANGE_NOT_FOUND);} );
     }
 
