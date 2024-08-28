@@ -16,8 +16,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
-import java.util.Enumeration;
-
 @Service
 public class UserService implements IUserService {
     @Autowired
@@ -52,10 +50,9 @@ public class UserService implements IUserService {
         HttpEntity<Void> entity = new HttpEntity<>(headers);
 
         // Perform the HTTP request
-        ResponseEntity<User> result =
-                restTemplate.exchange(authUrl + "/logged-user", HttpMethod.GET, entity, User.class);
+        ResponseEntity<Long> result = restTemplate.exchange(authUrl + "/users", HttpMethod.GET, entity, Long.class);
 
         // Return the User object from the response
-        return result.getBody();
+        return findById(result.getBody());
     }
 }
