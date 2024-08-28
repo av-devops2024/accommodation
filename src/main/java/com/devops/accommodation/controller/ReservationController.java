@@ -11,7 +11,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.IOException;
 import java.util.List;
+import java.util.zip.DataFormatException;
 
 @RestController
 @RequestMapping("/reservation")
@@ -38,12 +40,11 @@ public class ReservationController {
         return reservationService.getReservationsForGuest(user);
     }
 
-    @GetMapping("{accommodationId}")
+    @GetMapping("host")
     @ResponseStatus(HttpStatus.OK)
-    public List<HostReservationDTO> getReservationsForHost(@PathVariable int accommodationId,
-                                                           HttpServletRequest request){
+    public List<HostReservationDTO> getReservationsForHost( HttpServletRequest request) throws DataFormatException, IOException {
         User user = userService.getUser(request);
-        return reservationService.getReservationsForHost(user, accommodationId);
+        return reservationService.getReservationsForHost(user);
     }
 
     @GetMapping("/futureReservations/{accommodationId}")

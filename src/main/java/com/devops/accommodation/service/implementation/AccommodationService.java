@@ -17,6 +17,7 @@ import ftn.devops.dto.response.AccommodationResultResponse;
 import ftn.devops.dto.response.ImageDTO;
 import ftn.devops.dto.response.LocationDTO;
 import ftn.devops.enums.AccommodationBenefits;
+import ftn.devops.enums.PriceType;
 import ftn.devops.log.LogType;
 import org.hibernate.Hibernate;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -131,7 +132,11 @@ public class AccommodationService implements IAccommodationService {
             accommodationSearchResponse.setDailyPrice(price.getValue());
             accommodationSearchResponse.setPriceType(price.getType().toString());
             long numberOfNights = ChronoUnit.DAYS.between(searchRequest.getStartDate(), searchRequest.getEndDate());
-            accommodationSearchResponse.setTotalPrice(numberOfNights * price.getValue());
+            if(price.getType().equals(PriceType.PER_ACCOMMODATION)){
+                accommodationSearchResponse.setTotalPrice(numberOfNights * price.getValue());
+            } else {
+                accommodationSearchResponse.setTotalPrice(searchRequest.getNumberOfGuests() * numberOfNights * price.getValue());
+            }
             List<ImageDTO> images = new ArrayList();
             accommodation.getImages().forEach((image) -> {
                 images.add(new ImageDTO(image));
