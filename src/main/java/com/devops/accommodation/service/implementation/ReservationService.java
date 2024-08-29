@@ -245,6 +245,16 @@ public class ReservationService implements IReservationService {
         return getGuestReservationRequestDTOs(reservationRepository.findByGuest_IdAndStartDateAfterAndApprovedFalseAndDeletedFalse(user.getId(), LocalDateTime.now()));
     }
 
+    @Override
+    public boolean hadReservationInAccommodation(User user, Long accommodationId) {
+        return reservationRepository.existsByGuest_IdAndAccommodation_IdAndCancelledFalseAndApprovedTrueAndDeletedFalseAndEndDateLessThanEqual(user.getId(), accommodationId, LocalDateTime.now());
+    }
+
+    @Override
+    public boolean hadReservationFromHost(User user, Long userId) {
+        return false;
+    }
+
     protected List<HostReservationDTO> getHostReservationDTOs(List<Reservation> reservationRequests) {
         List<HostReservationDTO> slots = new ArrayList<>();
         reservationRequests.forEach(slot -> {

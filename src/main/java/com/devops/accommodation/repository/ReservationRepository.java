@@ -1,6 +1,7 @@
 package com.devops.accommodation.repository;
 
 import ftn.devops.db.Reservation;
+import ftn.devops.db.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -35,4 +36,7 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
     List<Reservation> findByAccommodation_IdAndEndDateBetweenAndApprovedTrueAndCancelledFalseAndDeletedFalse(Long id, LocalDateTime startDateStart, LocalDateTime startDateEnd);
     List<Reservation> findByAccommodation_IdAndStartDateLessThanEqualAndEndDateGreaterThanEqualAndApprovedTrueAndCancelledFalseAndDeletedFalse(Long id, LocalDateTime startDate, LocalDateTime endDate);
     List<Reservation> findByAccommodationIdAndCancelledFalseAndDeletedFalseAndApprovedTrueAndStartDateAfter(Long accommodationId, LocalDateTime date);
+
+    boolean existsByGuest_IdAndAccommodation_IdAndCancelledFalseAndApprovedTrueAndDeletedFalseAndEndDateLessThanEqual(Long guestId, Long accommodationId, LocalDateTime endDate);
+    boolean existsByGuest_IdAndAccommodation_Host_IdAndCancelledFalseAndApprovedTrueAndDeletedFalseAndEndDateLessThanEqual(Long guestId, Long accommodationId, LocalDateTime endDate);
 }

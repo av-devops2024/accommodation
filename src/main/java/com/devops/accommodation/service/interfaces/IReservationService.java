@@ -23,4 +23,8 @@ public interface IReservationService extends IReservationRequestService {
     List<GuestReservationDTO> cancelReservation(User user, long reservationRepository);
     Pair<Price, Double> countPrice(long accommodationId, LocalDateTime startDate, LocalDateTime endDate, int numberOfGuest);
     HostFutureReservationResponse getFutureReservationsForHost(User user, Long accommodationId);
+
+    boolean hadReservationInAccommodation(User user, Long accommodationId);
+
+    boolean hadReservationFromHost(User user, Long userId);
 }

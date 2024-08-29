@@ -31,4 +31,9 @@ public class Constants {
     public static final String INVALID_RESERVATION_CANCEL = "Reservation does not belong to user, he can't cancel it";
     public static final String INVALID_RESERVATION_CANCEL_TIME = "Cancelling is only possible before the start of the reservation";
     public static final String RESERVATION_NOT_FOUND  = "Reservation is not found";
+
+    public static final String RATING_NOT_FOUND = "Rating is not found";
+    public static final String ACTION_NOT_ALLOWED_USER_HAD_NO_RESERVATION = "User had no reservation in this accommodation";
+    public static final String ACTION_NOT_ALLOWED_RATING_IS_NOT_FROM_USER = "User had no reservation associated with host";
+    public static final String ACTION_NOT_ALLOWED_USER_ALREADY_HAS_RESERVATION_FOR_THE_ENTITY = "User already has rating for the entity";
 }
