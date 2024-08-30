@@ -2,23 +2,25 @@ package com.devops.accommodation.service.interfaces;
 
 import ftn.devops.db.User;
 import ftn.devops.dto.request.RatingRequest;
+import ftn.devops.dto.response.GuestRatingReservationDTO;
+import ftn.devops.dto.response.GuestReservationDTO;
 import ftn.devops.dto.response.RatingResponse;
 import ftn.devops.dto.response.RatingSummaryResponse;
 
-public interface IRatingService {
-    RatingSummaryResponse addAccommodationRating(User user, Long accommodationId, RatingRequest ratingRequest);
+import java.util.List;
 
-    RatingSummaryResponse addHostRating(User user, Long userId, RatingRequest ratingRequest);
+public interface IRatingService {
+    RatingResponse addAccommodationRating(User user, RatingRequest ratingRequest);
 
     RatingSummaryResponse getAccommodationRatings(Long accommodationId);
 
     RatingSummaryResponse getHostRatings(Long userId);
 
-    RatingSummaryResponse deleteAccommodationRating(User user, Long accommodationId, Long ratingId);
+    List<GuestRatingReservationDTO> deleteAccommodationRating(User user, Long ratingId);
 
-    RatingSummaryResponse deleteHostRating(User user, Long userId, Long ratingId);
+    RatingResponse editAccommodationRating(User user, RatingResponse ratingDTO);
 
-    RatingSummaryResponse editAccommodationRating(User user, Long accommodationId, RatingResponse rating);
+    List<GuestRatingReservationDTO> getRatedReservations(User user);
 
-    RatingSummaryResponse editHostRating(User user, Long userId, RatingResponse ratingRequest);
+    List<GuestReservationDTO> getUnratedReservations(User user);
 }
