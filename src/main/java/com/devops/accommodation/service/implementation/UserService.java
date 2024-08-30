@@ -50,9 +50,9 @@ public class UserService implements IUserService {
         HttpEntity<Void> entity = new HttpEntity<>(headers);
 
         // Perform the HTTP request
-        ResponseEntity<Long> result = restTemplate.exchange(authUrl + "/users", HttpMethod.GET, entity, Long.class);
+        ResponseEntity<User> result = restTemplate.exchange(authUrl + "/auth/logged-user", HttpMethod.GET, entity, User.class);
 
         // Return the User object from the response
-        return findById(result.getBody());
+        return result.getBody();
     }
 }

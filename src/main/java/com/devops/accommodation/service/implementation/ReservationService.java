@@ -9,14 +9,11 @@ import com.devops.accommodation.repository.AccommodationRepository;
 import com.devops.accommodation.repository.ReservationRepository;
 import com.devops.accommodation.service.interfaces.IAccommodationService;
 import com.devops.accommodation.service.interfaces.IPriceService;
+import com.devops.accommodation.service.interfaces.IRatingService;
 import com.devops.accommodation.service.interfaces.IReservationService;
 import com.devops.accommodation.utils.Constants;
 import com.devops.accommodation.utils.DateUtils;
-import ftn.devops.db.Accommodation;
-import ftn.devops.db.Price;
-import ftn.devops.db.Reservation;
-import ftn.devops.db.User;
-import ftn.devops.dto.request.CreateReservationRequestDTO;
+import ftn.devops.db.*;
 import ftn.devops.dto.response.AccommodationDTO;
 import ftn.devops.dto.response.GuestReservationDTO;
 import ftn.devops.dto.response.HostReservationDTO;
@@ -46,12 +43,12 @@ public class ReservationService implements IReservationService {
     protected LogClientService logClientService;
     @Autowired
     protected ReservationRepository reservationRepository;
-
     @Autowired
     private IAccommodationService accommodationService;
-
     @Autowired
     private IPriceService priceService;
+    @Autowired
+    private IRatingService ratingService;
     @Autowired
     private AccommodationRepository accommodationRepository;
 
@@ -73,6 +70,15 @@ public class ReservationService implements IReservationService {
         return reservationRepository.findById(id)
                 .orElseThrow(() -> {
                     logClientService.sendLog(LogType.WARN, "Reservation not found", id);
+                    throw new EntityNotFoundException(Constants.RESERVATION_NOT_FOUND);
+                });
+    }
+
+    @Override
+    public Reservation findByRatingId(Long ratingId) {
+        return reservationRepository.findByRatingId(ratingId)
+                .orElseThrow(() -> {
+                    logClientService.sendLog(LogType.WARN, "Reservation not found", ratingId);
                     throw new EntityNotFoundException(Constants.RESERVATION_NOT_FOUND);
                 });
     }
@@ -196,6 +202,20 @@ public class ReservationService implements IReservationService {
     }
 
     @Override
+    public List<Reservation> getRatedReservations(User user) {
+        logClientService.sendLog(LogType.INFO, "Get rated reservations for user", user.getId());
+        return reservationRepository
+                .findByGuest_IdAndApprovedTrueAndDeletedFalseAndCancelledFalseAndRatedTrue(user.getId());
+    }
+
+    @Override
+    public List<Reservation> getUnratedReservations(User user) {
+        logClientService.sendLog(LogType.INFO, "Get unrated reservations for user", user.getId());
+        return reservationRepository
+                .findByGuest_IdAndEndDateBeforeAndApprovedTrueAndDeletedFalseAndCancelledFalseAndRatedFalse(user.getId(), LocalDateTime.now());
+    }
+
+    @Override
     @TrackExecutionTime
     public List<HostReservationDTO> getReservationsForHost(User user) throws DataFormatException, IOException {
         logClientService.sendLog(LogType.INFO, "Get reservations for user", new Object[]{user.getId()} );
@@ -251,8 +271,18 @@ public class ReservationService implements IReservationService {
     }
 
     @Override
+    public boolean hadPastReservationInAccommodation(User user, Long accommodationId) {
+        return reservationRepository.existsByGuest_IdAndAccommodation_IdAndCancelledFalseAndApprovedTrueAndDeletedFalseAndEndDateAfter(user.getId(), accommodationId, LocalDateTime.now());
+    }
+
+    @Override
     public boolean hadReservationFromHost(User user, Long userId) {
         return false;
+    }
+
+    @Override
+    public Reservation save(Reservation reservation) {
+        return reservationRepository.save(reservation);
     }
 
     protected List<HostReservationDTO> getHostReservationDTOs(List<Reservation> reservationRequests) {

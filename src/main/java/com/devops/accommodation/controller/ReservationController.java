@@ -4,6 +4,7 @@ import com.devops.accommodation.dto.response.HostFutureReservationResponse;
 import com.devops.accommodation.service.interfaces.IReservationService;
 import com.devops.accommodation.service.interfaces.IUserService;
 import ftn.devops.db.User;
+import ftn.devops.dto.response.GuestRatingReservationDTO;
 import ftn.devops.dto.response.GuestReservationDTO;
 import ftn.devops.dto.response.HostReservationDTO;
 import jakarta.servlet.http.HttpServletRequest;
@@ -50,7 +51,7 @@ public class ReservationController {
     @GetMapping("/futureReservations/{accommodationId}")
     @ResponseStatus(HttpStatus.OK)
     public HostFutureReservationResponse getFutureReservationsForHost(@PathVariable Long accommodationId,
-                                                                      HttpServletRequest request){
+                                                                      HttpServletRequest request) {
         User user = userService.getUser(request);
         return reservationService.getFutureReservationsForHost(user, accommodationId);
     }

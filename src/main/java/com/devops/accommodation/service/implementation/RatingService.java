@@ -9,18 +9,23 @@ import com.devops.accommodation.service.interfaces.IUserService;
 import com.devops.accommodation.utils.Constants;
 import ftn.devops.db.Accommodation;
 import ftn.devops.db.Rating;
+import ftn.devops.db.Reservation;
 import ftn.devops.db.User;
 import ftn.devops.dto.request.RatingRequest;
+import ftn.devops.dto.response.GuestRatingReservationDTO;
+import ftn.devops.dto.response.GuestReservationDTO;
 import ftn.devops.dto.response.RatingResponse;
 import ftn.devops.dto.response.RatingSummaryResponse;
 import ftn.devops.enums.NotificationType;
+import ftn.devops.log.LogType;
 import jakarta.persistence.EntityNotFoundException;
-import org.apache.catalina.Host;
 import org.hibernate.Hibernate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
@@ -39,76 +44,77 @@ public class RatingService implements IRatingService {
     private IUserService userService;
 
     @Override
-    public RatingSummaryResponse addAccommodationRating(User user, Long accommodationId, RatingRequest ratingRequest) {
-        if (reservationService.hadReservationInAccommodation(user, accommodationId)){
+    public RatingResponse addAccommodationRating(User user, RatingRequest ratingRequest) {
+        Reservation reservation = reservationService.findById(ratingRequest.getReservationId());
+        Accommodation accommodation = reservation.getAccommodation();
+        if (reservationService.hadPastReservationInAccommodation(user, accommodation.getId())){
             throw new ActionNotAllowedException(Constants.ACTION_NOT_ALLOWED_USER_HAD_NO_RESERVATION);
         }
-        if (ratingRepository.findByGuest_IdAndAccommodation_Id(user.getId(), accommodationId) != null)
-            throw new ActionNotAllowedException(Constants.ACTION_NOT_ALLOWED_USER_ALREADY_HAS_RESERVATION_FOR_THE_ENTITY);
-        addRatingForAccommodation(user, ratingRequest, accommodationId);
-        return getAccommodationRatings(accommodationId);
-    }
-    @Override
-    public RatingSummaryResponse addHostRating(User user, Long userId, RatingRequest ratingRequest) {
-        if (reservationService.hadReservationFromHost(user, userId)){
-            throw new ActionNotAllowedException(Constants.ACTION_NOT_ALLOWED_USER_HAD_NO_RESERVATION);
-        }
-        if (ratingRepository.findByGuest_IdAndHost_Id(user.getId(), userId) != null)
-            throw new ActionNotAllowedException(Constants.ACTION_NOT_ALLOWED_USER_ALREADY_HAS_RESERVATION_FOR_THE_ENTITY);
-        addRatingForHost(user, ratingRequest, userId);
-        return getHostRatings(userId);
+        //treba proveriti da li ima za rezervaciju, a ne za accommodation, za accommodation moze imati vise puta
+//        if (ratingRepository.findByGuest_IdAndAccommodation_Id(user.getId(), accommodationId) != null)
+//            throw new ActionNotAllowedException(Constants.ACTION_NOT_ALLOWED_USER_ALREADY_HAS_RESERVATION_FOR_THE_ENTITY);
+        Rating rating = addRatingForAccommodation(user, ratingRequest, accommodation);
+        reservation.setRated(true);
+        reservation.setRatingId(rating.getId());
+        reservationService.save(reservation);
+        return new RatingResponse(rating);
     }
 
+
+
     @Override
-    public RatingSummaryResponse editAccommodationRating(User user, Long accommodationId, RatingResponse ratingDTO) {
+    public RatingResponse editAccommodationRating(User user, RatingResponse ratingDTO) {
         Rating rating = findById(ratingDTO.getId());
         if (!Objects.equals(rating.getGuest().getId(), user.getId()))
             throw new ActionNotAllowedException(Constants.ACTION_NOT_ALLOWED_RATING_IS_NOT_FROM_USER);
-        updateRating(rating, ratingDTO);
-        return getAccommodationRatings(accommodationId);
+        Rating updatedRating = updateRating(rating, ratingDTO);
+        return new RatingResponse(updatedRating);
     }
 
     @Override
-    public RatingSummaryResponse editHostRating(User user, Long userId, RatingResponse ratingDTO) {
-        Rating rating = findById(ratingDTO.getId());
-        if (!Objects.equals(rating.getGuest().getId(), user.getId()))
-            throw new ActionNotAllowedException(Constants.ACTION_NOT_ALLOWED_RATING_IS_NOT_FROM_USER);
-        updateRating(rating, ratingDTO);
-        return getHostRatings(userId);
+    public List<GuestRatingReservationDTO> getRatedReservations(User user) {
+        logClientService.sendLog(LogType.INFO, "Get rated reservations for user", user.getId());
+        return getGuestRatingReservationDTOs(reservationService
+                .getRatedReservations(user));
     }
 
     @Override
-    public RatingSummaryResponse deleteAccommodationRating(User user, Long accommodationId, Long ratingId) {
+    public List<GuestReservationDTO> getUnratedReservations(User user) {
+        logClientService.sendLog(LogType.INFO, "Get unrated reservations for user", user.getId());
+        return getGuestReservationRequestDTOs(reservationService
+                .getUnratedReservations(user));
+    }
+
+    @Override
+    public List<GuestRatingReservationDTO> deleteAccommodationRating(User user, Long ratingId) {
         Rating rating = findById(ratingId);
         if (!Objects.equals(rating.getGuest().getId(), user.getId()))
             throw new ActionNotAllowedException(Constants.ACTION_NOT_ALLOWED_RATING_IS_NOT_FROM_USER);
+        Reservation reservation = reservationService.findByRatingId(ratingId);
+        reservation.setRatingId(null);
+        reservation.setRated(false);
+        reservationService.save(reservation);
         ratingRepository.delete(rating);
-        return getAccommodationRatings(accommodationId);
-    }
-
-    @Override
-    public RatingSummaryResponse deleteHostRating(User user, Long userId, Long ratingId) {
-        Rating rating = findById(ratingId);
-        if (!Objects.equals(rating.getGuest().getId(), user.getId()))
-            throw new ActionNotAllowedException(Constants.ACTION_NOT_ALLOWED_RATING_IS_NOT_FROM_USER);
-        ratingRepository.delete(rating);
-        return getHostRatings(userId);
+        return getRatedReservations(user);
     }
 
     @Override
     public RatingSummaryResponse getAccommodationRatings(Long accommodationId) {
-        return convertIntoResponse(ratingRepository.findByAccommodation_Id(accommodationId));
+        return convertIntoResponse(ratingRepository.findByAccommodation_Id(accommodationId), false);
     }
 
     @Override
     public RatingSummaryResponse getHostRatings(Long userId) {
-        return convertIntoResponse(ratingRepository.findByHost_Id(userId));
+        return convertIntoResponse(ratingRepository.findByHost_Id(userId), true);
     }
 
-    private void updateRating(Rating rating, RatingResponse ratingDTO) {
-        rating.setText(ratingDTO.getText());
-        rating.setValue(ratingDTO.getValue());
-        ratingRepository.save(rating);
+    private Rating updateRating(Rating rating, RatingResponse ratingDTO) {
+        rating.setAccommodationValue(ratingDTO.getAccommodationValue());
+        rating.setAccommodationText(ratingDTO.getAccommodationText());
+        rating.setHostValue(ratingDTO.getHostValue());
+        rating.setHostText(ratingDTO.getHostText());
+        rating.setDate(LocalDateTime.now());
+        return ratingRepository.save(rating);
     }
 
     public Rating findById(long id) {
@@ -118,11 +124,29 @@ public class RatingService implements IRatingService {
                 });
     }
 
-    private RatingSummaryResponse convertIntoResponse(List<Rating> ratings) {
+    protected List<GuestRatingReservationDTO> getGuestRatingReservationDTOs(List<Reservation> reservationRequests) {
+        List<GuestRatingReservationDTO> slots = new ArrayList<>();
+        for(Reservation reservation : reservationRequests) {
+            Rating rating = findById(reservation.getRatingId());
+            slots.add(new GuestRatingReservationDTO(reservation, rating));
+        }
+        Collections.sort(slots);
+        return slots;
+    }
+
+    protected List<GuestReservationDTO> getGuestReservationRequestDTOs(List<Reservation> reservationRequests) {
+        List<GuestReservationDTO> slots = new ArrayList<>();
+        reservationRequests.forEach(slot -> slots.add(new GuestReservationDTO(slot)));
+        Collections.sort(slots);
+        return slots;
+    }
+
+    private RatingSummaryResponse convertIntoResponse(List<Rating> ratings, boolean isHost) {
         RatingSummaryResponse response = new RatingSummaryResponse();
         double meanRating = 0;
         for (Rating rating : ratings) {
-            meanRating = meanRating + rating.getValue();
+            double value = isHost ? rating.getHostValue() : rating.getAccommodationValue();
+            meanRating = meanRating + value;
             Hibernate.initialize(rating.getGuest());
             response.addRatingResponse(rating);
         }
@@ -130,27 +154,18 @@ public class RatingService implements IRatingService {
         return response;
     }
 
-    private void addRatingForAccommodation(User user, RatingRequest ratingRequest, long accommodationId) {
+    private Rating addRatingForAccommodation(User user, RatingRequest ratingRequest, Accommodation accommodation) {
         Rating rating = new Rating();
-        Accommodation accommodation = accommodationService.getAccommodationById(accommodationId);
         rating.setAccommodation(accommodation);
         rating.setDate(LocalDateTime.now());
         rating.setGuest(user);
-        rating.setText(ratingRequest.getText());
-        rating.setValue(ratingRequest.getValue());
-        ratingRepository.save(rating);
+        rating.setAccommodationText(ratingRequest.getAccommodationText());
+        rating.setAccommodationValue(ratingRequest.getAccommodationValue());
+        rating.setHostText(ratingRequest.getHostText());
+        rating.setHostValue(ratingRequest.getHostValue());
+        rating.setHost(accommodation.getHost());
+        Rating savedRating = ratingRepository.save(rating);
         logClientService.sendNotificationWithGuestName(accommodation.getHost(), user.getName(), accommodation, null, NotificationType.RATING_ACCOMMODATION);
-    }
-
-    private void addRatingForHost(User user, RatingRequest ratingRequest, long userId) {
-        Rating rating = new Rating();
-        User host = userService.findById(userId);
-        rating.setHost(host);
-        rating.setDate(LocalDateTime.now());
-        rating.setGuest(user);
-        rating.setText(ratingRequest.getText());
-        rating.setValue(ratingRequest.getValue());
-        ratingRepository.save(rating);
-        logClientService.sendNotificationWithGuestName(host, user.getName(), null, null, NotificationType.RATING_HOST);
+        return savedRating;
     }
 }

@@ -7,6 +7,7 @@ import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface ReservationRepository extends JpaRepository<Reservation, Long> {
@@ -30,7 +31,8 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
     List<Reservation> findByAccommodation_IdAndStartDateAfterAndApprovedTrueAndDeletedFalseAndCancelledFalse(Long accommodationId, LocalDateTime now);
 
     List<Reservation> findByGuest_IdAndStartDateAfterAndApprovedTrueAndDeletedFalseAndCancelledFalse(long l, LocalDateTime now);
-
+    List<Reservation> findByGuest_IdAndApprovedTrueAndDeletedFalseAndCancelledFalseAndRatedTrue(long l);
+    List<Reservation> findByGuest_IdAndEndDateBeforeAndApprovedTrueAndDeletedFalseAndCancelledFalseAndRatedFalse(long l, LocalDateTime now);
     /* interval reservations */
     List<Reservation> findByAccommodation_IdAndStartDateBetweenAndApprovedTrueAndCancelledFalseAndDeletedFalse(Long id, LocalDateTime startDateStart, LocalDateTime startDateEnd);
     List<Reservation> findByAccommodation_IdAndEndDateBetweenAndApprovedTrueAndCancelledFalseAndDeletedFalse(Long id, LocalDateTime startDateStart, LocalDateTime startDateEnd);
@@ -39,4 +41,9 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
 
     boolean existsByGuest_IdAndAccommodation_IdAndCancelledFalseAndApprovedTrueAndDeletedFalseAndEndDateLessThanEqual(Long guestId, Long accommodationId, LocalDateTime endDate);
     boolean existsByGuest_IdAndAccommodation_Host_IdAndCancelledFalseAndApprovedTrueAndDeletedFalseAndEndDateLessThanEqual(Long guestId, Long accommodationId, LocalDateTime endDate);
+    boolean existsByGuest_IdAndAccommodation_IdAndCancelledFalseAndApprovedTrueAndDeletedFalseAndEndDateAfter(Long guestId, Long accommodationId, LocalDateTime endDate);
+
+    Optional<Reservation> findByRatingId(Long ratingId);
 }
+
+
