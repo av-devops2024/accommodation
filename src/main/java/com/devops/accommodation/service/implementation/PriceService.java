@@ -15,9 +15,9 @@ import ftn.devops.db.Price;
 import ftn.devops.dto.DateRangeDTO;
 import ftn.devops.dto.PriceDTO;
 import ftn.devops.enums.PriceType;
-import ftn.devops.log.LogType;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cglib.core.Local;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -27,8 +27,7 @@ import java.util.List;
 
 @Service
 public class PriceService implements IPriceService {
-    @Autowired
-    private LogClientService logClientService;
+    private final Logger logger = LoggerFactory.getLogger(PriceService.class);
 
     @Autowired
     private PriceRepository priceRepository;
@@ -39,9 +38,8 @@ public class PriceService implements IPriceService {
     private IAccommodationService accommodationService;
 
     @Override
-//    @TrackExecutionTime
     public PriceDTO addPrice(Long accommodationId, PriceRequest priceRequest) {
-//        logClientService.sendLog(LogType.INFO, "Add price", new Object[]{accommodationId, priceDTO});
+        logger.info("Add price");
         this.checkDateValidity(priceRequest.getStartDate(), priceRequest.getEndDate());
 
 //        if (reservationService.hasApprovedReservationInside(accommodationId, priceRequest.getStartDate(), priceRequest.getEndDate())){
@@ -52,46 +50,44 @@ public class PriceService implements IPriceService {
 
         Price price = createPrice(priceRequest, accommodationId);
         Price savedPrice = priceRepository.save(price);
-//        logClientService.sendLog(LogType.INFO, "Price is added", new Object[]{priceDTO});
+        logger.info("Price is added");
         return new PriceDTO(savedPrice);
     }
 
     @Override
     @TrackExecutionTime
     public List<PriceDTO> updatePrice(Long accommodationId, PriceDTO priceDTO) {
-        logClientService.sendLog(LogType.INFO, "Update price", new Object[]{accommodationId, priceDTO});
+        logger.info("Update price");
         this.checkDateValidity(priceDTO.getStartDate(), priceDTO.getEndDate());
 
         if (reservationService.hasApprovedReservationInside(accommodationId, priceDTO.getStartDate(), priceDTO.getEndDate())) {
-            logClientService.sendLog(LogType.WARN, "Reservation is present in period", new Object[]{accommodationId, priceDTO});
+            logger.warn("Reservation is present in period");
             throw new ActionNotAllowedException(Constants.ACTION_NOT_ALLOWED_BECAUSE_CONTAINS_RESERVATION);
         }
 
         Price price = getPrice(priceDTO.getId());
         if (!price.getStartDate().equals(priceDTO.getStartDate()) || !price.getEndDate().equals(priceDTO.getEndDate())) {
-            logClientService.sendLog(LogType.WARN, "Price range can not be changed", new Object[]{accommodationId, priceDTO});
+            logger.warn("Price range can not be changed");
             throw new ActionNotAllowedException(Constants.PRICE_START_AND_END_DATE_ARE_NOT_CHANGEABLE);
         }
 
         price.setValue(priceDTO.getValue());
         price.setType(PriceType.valueOf(priceDTO.getType()));
         priceRepository.save(price);
-        logClientService.sendLog(LogType.INFO, "Price is updated", new Object[]{priceDTO});
+        logger.info("Price is updated");
         return getPrices(accommodationId);
     }
 
     @Override
-//    @TrackExecutionTime
     public List<PriceDTO> getPrices(Long accommodationId) {
-//        logClientService.sendLog(LogType.INFO, "Get prices", accommodationId);
+        logger.info("Get prices");
         List<Price> prices = priceRepository.findByAccommodation_IdAndDeletedFalseOrderByStartDateAsc(accommodationId);
         return getPriceDTOs(prices);
     }
 
     @Override
-//    @TrackExecutionTime
     public List<PriceDTO> getActivePrices(Long accommodationId) {
-//        logClientService.sendLog(LogType.INFO, "Get active prices", accommodationId);
+        logger.info("Get active prices");
         List<Price> prices = priceRepository.findByAccommodation_IdAndDeletedFalseAndEndDateGreaterThanOrderByStartDateAsc(accommodationId,  LocalDateTime.now());
         return getPriceDTOs(prices);
     }
@@ -101,12 +97,12 @@ public class PriceService implements IPriceService {
     public List<PriceDTO> deletePrices(Long accommodationId, PriceDTO priceDTO) {
         Price price = getPrice(priceDTO.getId());
         if (accommodationId != price.getAccommodation().getId()){
-            logClientService.sendLog(LogType.WARN, "Price does not belong to accommodation", new Object[]{accommodationId, priceDTO});
+            logger.warn("Price does not belong to accommodation");
             throw new EntityNotFoundException(Constants.INVALID_PRICE_ACCOMMODATION_RELATIONSHIP);
         }
         price.setDeleted(true);
         priceRepository.save(price);
-        logClientService.sendLog(LogType.INFO, "Price is deleted", new Object[]{priceDTO});
+        logger.info("Price is deleted");
         return getPrices(accommodationId);
     }
 
@@ -141,7 +137,7 @@ public class PriceService implements IPriceService {
     private Price getPrice(long id){
         return priceRepository.findById(id)
                 .orElseThrow(() -> {
-                    logClientService.sendLog(LogType.WARN, "Price is not found", id);
+                    logger.warn("Price is not found");
                     throw new EntityNotFoundException(Constants.PRICE_NOT_FOUND);
                 });
     }

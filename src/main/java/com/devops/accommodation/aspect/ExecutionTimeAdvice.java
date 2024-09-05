@@ -38,8 +38,7 @@ public class ExecutionTimeAdvice {
         Arrays.stream(point.getArgs()).forEach(param -> {
             params.add((param.getClass().toString().contains("User")) ? ((User)param).getId() : param);
         });
-        logClientService.sendTrace(className[className.length-1], signature.getName(),
-                (int) (endTime-startTime), gson.toJson(params));
+        //logClientService.sendTrace(className[className.length-1], signature.getName(), (int) (endTime-startTime), gson.toJson(params));
         return object;
     }
 }

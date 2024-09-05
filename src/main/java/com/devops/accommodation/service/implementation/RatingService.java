@@ -17,9 +17,10 @@ import ftn.devops.dto.response.GuestReservationDTO;
 import ftn.devops.dto.response.RatingResponse;
 import ftn.devops.dto.response.RatingSummaryResponse;
 import ftn.devops.enums.NotificationType;
-import ftn.devops.log.LogType;
 import jakarta.persistence.EntityNotFoundException;
 import org.hibernate.Hibernate;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -31,6 +32,7 @@ import java.util.Objects;
 
 @Service
 public class RatingService implements IRatingService {
+    private final Logger logger = LoggerFactory.getLogger(RatingService.class);
     @Autowired
     private LogClientService logClientService;
 
@@ -73,14 +75,14 @@ public class RatingService implements IRatingService {
 
     @Override
     public List<GuestRatingReservationDTO> getRatedReservations(User user) {
-        logClientService.sendLog(LogType.INFO, "Get rated reservations for user", user.getId());
+        logger.info("Get rated reservations for user {}",user.getId());
         return getGuestRatingReservationDTOs(reservationService
                 .getRatedReservations(user));
     }
 
     @Override
     public List<GuestReservationDTO> getUnratedReservations(User user) {
-        logClientService.sendLog(LogType.INFO, "Get unrated reservations for user", user.getId());
+        logger.info("Get unrated reservations for user {}",user.getId());
         return getGuestReservationRequestDTOs(reservationService
                 .getUnratedReservations(user));
     }
