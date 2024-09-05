@@ -16,14 +16,6 @@ jobs:
       - name: Code Checkout
         uses: actions/checkout@v3
 
-      - name: Cache Accommodation Maven repository
-        uses: actions/cache@v4
-        with:
-          path: ~/.m2/repository
-          key: acc-${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
-          restore-keys: |
-            acc-${{ runner.os }}-maven-
-
       - name: Build Accommodation with Maven
         uses: actions/checkout@v2
         with:
