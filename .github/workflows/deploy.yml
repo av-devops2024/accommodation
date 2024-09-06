@@ -25,6 +25,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: av-devops2024/model
+          ref: develop
           token: ${{ secrets.PAT_TOKEN }}
           path: model-repo
 
