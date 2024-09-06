@@ -61,8 +61,7 @@ jobs:
         with:
           path: acc-repo
           run: |
-            mvn clean install &
-              sleep 60
+            cd acc-repo && mvn clean install && sleep 60
 
       - name: List directory contents
         #uses: actions/checkout@v4
