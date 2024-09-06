@@ -61,18 +61,17 @@ jobs:
         with:
           path: acc-repo
           run: |
-            cd acc-repo & mvn clean install
+            mvn clean install
 
       - name: List directory contents
-        # uses: actions/checkout@v2
-        # with:
-        #  cd acc-repo
-        run: |
-          cd acc-repo
-          echo "Listing root folder contents:"
-          ls -la
-          echo "Listing target folder contents:"
-          ls -la target
+        uses: actions/checkout@v4
+        with:
+          run: |
+            cd acc-repo
+            echo "Listing root folder contents:"
+            ls -la
+            echo "Listing target folder contents:"
+            ls -la target
 
       - name: Build Docker image
         # uses: actions/checkout@v2
