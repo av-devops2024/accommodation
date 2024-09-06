@@ -22,10 +22,7 @@ jobs:
           java-version: "17"
 
       - name: Build Accommodation with Maven
-        with:
-          repository: av-devops2024/accommodation
-          token: ${{ secrets.PAT_TOKEN }}
-          run: mvn clean install
+        run: mvn clean install
 
       - name: List directory contents
         run: |
