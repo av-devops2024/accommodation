@@ -21,17 +21,17 @@ jobs:
         with:
           java-version: "17"
 
-      - name: List directory contents
-        run: |
-          echo "Listing root folder contents:"
-          ls -la
-
       - name: Build Accommodation with Maven
         uses: actions/checkout@v2
         with:
           repository: av-devops2024/accommodation
           token: ${{ secrets.PAT_TOKEN }}
           run: mvn clean install
+
+      - name: List directory contents
+        run: |
+          echo "Listing root folder contents:"
+          ls -la
 
       - name: Build Docker image
         run: docker build -t acc-image .
