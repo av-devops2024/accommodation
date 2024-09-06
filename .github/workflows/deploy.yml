@@ -67,8 +67,8 @@ jobs:
       - name: List directory contents
         # uses: actions/checkout@v2
         # with:
+        #  cd acc-repo
         run: |
-          cd acc-repo
           echo "Listing root folder contents:"
           ls -la
           echo "Listing target folder contents:"
