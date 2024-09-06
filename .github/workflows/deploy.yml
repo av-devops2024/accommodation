@@ -64,20 +64,19 @@ jobs:
             mvn clean install
 
       - name: List directory contents
-        uses: actions/checkout@v4
-        with:
-          run: |
-            cd acc-repo
-            echo "Listing root folder contents:"
-            ls -la
-            echo "Listing target folder contents:"
-            ls -la target
+        #uses: actions/checkout@v4
+        #with:
+        run: |
+          echo "Listing root folder contents:"
+          ls -la
+        #echo "Listing target folder contents:"
+        #ls -la target
 
       - name: Build Docker image
         # uses: actions/checkout@v2
         # with:
         run: |
-          cd acc-repo & docker build -t ${{ steps.meta.outputs.tags }} .
+          docker build -t ${{ steps.meta.outputs.tags }} .
 
       - name: Extract Metadata
         uses: docker/metadata-action@v5
