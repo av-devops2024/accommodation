@@ -69,7 +69,7 @@ jobs:
         run: |
           echo "Listing root folder contents:"
           ls -la
-          cd acc-repo && s -la
+          cd acc-repo && ls -la
         #echo "Listing target folder contents:"
         #ls -la target
 
@@ -85,7 +85,7 @@ jobs:
         run: |
           echo "Listing root folder contents:"
           ls -la
-          cd acc-repo && s -la
+          cd acc-repo && ls -la
 
       - name: Extract Metadata
         uses: docker/metadata-action@v5
