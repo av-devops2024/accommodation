@@ -13,7 +13,5 @@ public interface IAvailabilitySlotService {
 
     List<AvailabilitySlotDTO> getActiveAvailabilitySlots(long accommodationId);
 
-    List<AvailabilitySlotDTO> deleteAvailabilitySlot(long accommodationId, AvailabilitySlotDTO availabilitySlotDTO);
-
     List<AvailabilitySlotDTO> deleteAvailabilitySlot(long accommodationId, long availabilitySlotId);
 }

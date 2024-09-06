@@ -4,9 +4,10 @@ import com.devops.accommodation.repository.UserRepository;
 import com.devops.accommodation.service.interfaces.IUserService;
 import com.devops.accommodation.utils.Constants;
 import ftn.devops.db.User;
-import ftn.devops.log.LogType;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
@@ -18,6 +19,7 @@ import org.springframework.web.client.RestTemplate;
 
 @Service
 public class UserService implements IUserService {
+    private final Logger logger = LoggerFactory.getLogger(UserService.class);
     @Autowired
     private LogClientService logClientService;
     @Autowired
@@ -30,7 +32,7 @@ public class UserService implements IUserService {
     public User findById(long id) {
         return hostRepository.findById(id)
                 .orElseThrow(() -> {
-                    logClientService.sendLog(LogType.WARN, "Host not found", id);
+                    logger.warn("Host not found {}", id);
                     throw new EntityNotFoundException(Constants.HOST_NOT_FOUND);
                 });
     }

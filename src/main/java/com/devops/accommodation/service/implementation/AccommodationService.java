@@ -13,13 +13,13 @@ import ftn.devops.dto.request.CreateAccommodationRequest;
 import ftn.devops.dto.request.LocationRequest;
 import ftn.devops.dto.request.SearchRequest;
 import ftn.devops.dto.response.AccommodationDTO;
-import ftn.devops.dto.response.AccommodationResultResponse;
 import ftn.devops.dto.response.ImageDTO;
 import ftn.devops.dto.response.LocationDTO;
 import ftn.devops.enums.AccommodationBenefits;
 import ftn.devops.enums.PriceType;
-import ftn.devops.log.LogType;
 import org.hibernate.Hibernate;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,14 +30,12 @@ import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @Transactional
 public class AccommodationService implements IAccommodationService {
 
-    @Autowired
-    private LogClientService logClientService;
+    private final Logger logger = LoggerFactory.getLogger(AccommodationService.class);
     @Autowired
     private AccommodationRepository accommodationRepository;
     @Autowired
@@ -51,11 +49,11 @@ public class AccommodationService implements IAccommodationService {
 
     @Override
     public AccommodationDTO addAccommodation(CreateAccommodationRequest accommodationDTO, User user){
+        logger.info("Add accommodation");
         ObjectMapper objectMapper = new ObjectMapper();
         try{
             LocationRequest locationRequest = objectMapper.readValue(accommodationDTO.getLocation(), LocationRequest.class);
             Location location = locationService.saveLocation(new Location(locationRequest));
-//            logClientService.sendLog(LogType.INFO, "Create accommodation", accommodationDTO);
             Accommodation accommodation = new Accommodation();
             accommodation.setName(accommodationDTO.getName());
             accommodation.setLocation(location);
@@ -71,13 +69,11 @@ public class AccommodationService implements IAccommodationService {
                         resultedImage.setAccommodation(accommodation);
                         accommodation.addImage(resultedImage);
                 } catch (IOException e) {
-                    logClientService.sendLog(LogType.WARN, "Invalid image", image);
+                    logger.warn("Invalid image");
                     throw new InvalidImageException(Constants.IMAGE_INVALID + image.getOriginalFilename());
                 }
             }
             accommodationRepository.save(accommodation);
-//            accommodation.getImages().forEach(image -> this.imageService.decompressImage(image));
-//            logClientService.sendLog(LogType.INFO, "Added accommodation", accommodationDTO);
             return new AccommodationDTO(accommodation);
             }catch (JsonProcessingException e){
                 throw new RuntimeException(e.getMessage());
@@ -86,12 +82,12 @@ public class AccommodationService implements IAccommodationService {
 
     @Override
     public AccommodationDTO getAccommodation(long id) {
-        logClientService.sendLog(LogType.INFO, "Get accommodation", id);
+        logger.info("Get accommodation");
         Accommodation accommodation = getAccommodationById(id);
         Hibernate.initialize(accommodation.getBenefits());
         Hibernate.initialize(accommodation.getImages());
         accommodation.getImages().forEach(image -> this.imageService.decompressImage(image));
-        logClientService.sendLog(LogType.INFO, "Found accommodation", id);
+        logger.info("Found accommodation");
         return new AccommodationDTO(accommodation);
     }
 
@@ -99,7 +95,7 @@ public class AccommodationService implements IAccommodationService {
     public Accommodation getAccommodationById(long id) {
         return this.accommodationRepository.findById(id)
                 .orElseThrow(() -> {
-                    logClientService.sendLog(LogType.WARN, "Accommodation not found", id);
+                    logger.warn("Accommodation not found");
                     throw new EntityNotFoundException(Constants.ACCOMMODATION_NOT_FOUND);
                 });
     }

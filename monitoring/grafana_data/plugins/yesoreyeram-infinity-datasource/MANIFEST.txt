@@ -1,0 +1,44 @@
+
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA512
+
+{
+  "manifestVersion": "2.0.0",
+  "signatureType": "grafana",
+  "signedByOrg": "grafana",
+  "signedByOrgName": "Grafana Labs",
+  "plugin": "yesoreyeram-infinity-datasource",
+  "version": "2.9.6",
+  "time": 1725356920605,
+  "keyId": "7e4d0c6a708866e7",
+  "files": {
+    "CHANGELOG.md": "da6e02571031d0cdb5bc9d9b17abeed1eac3c041581788d42d81000226d5643c",
+    "LICENSE": "85fb2c20b586ef9dc00ee5c41140e1cd59fdded9a0b24a9054b04e9f0f6b2977",
+    "README.md": "351dea529ec76dc9b396ef8f29d4ec36cab5ace16040f42142f0c58427ee3a7d",
+    "go_plugin_build_manifest": "aa24d601f3d4ff2021f3bb0f530baf77a730c9ee507b72efba558891a3781a33",
+    "gpx_infinity_linux_amd64": "8d3707acd460e9b60db548c8eb983dbf615db7a238d2a092e093620f9fad98ad",
+    "img/aws.jpg": "e682ccc794708fd3eb32a3fb5e2bcccd8ff3b54f30eba2086fd1b28a82020d81",
+    "img/homepage-bg.svg": "97ec32b2c542bcb63b7fa7659e42a876a5b9ec00aef7a486f2dc41b83d7d9eb8",
+    "img/icon.svg": "e498b00e1cc3c9e8b65a2b8320b7d170c6da61d424fe5f3f3fdf9963204449ae",
+    "img/oauth-2-sm.png": "9945bb307d5545369d50381acc97d48b4a98433831f14e99eb839f0970a91258",
+    "img/slide-features.png": "58aba3b2f2d73ee99945cba9746463f0039d8afb5366ed8d42db62145b914d0f",
+    "img/slide-rest-api.png": "cf72349768e0ccf19a856d86e97c8e67dcdadfcee49e73ae5acbe781c3ae0c79",
+    "img/slide-series.png": "f7d523c39f9d4567974c37432f047e4e8944cb92dc2c9a4424757ce5e54dc3a7",
+    "img/slide-variables.png": "8ed0cd7b1ac00bd2c7fa6e72c513b678c39ba7d63030f06e8695cb1d352e3b34",
+    "module.js": "26fc8827670c9046070111b6341ffcbd97fc00db6e845d55088124cf124637fe",
+    "module.js.LICENSE.txt": "4cc2b646a9dd57535489632cb3201bbbf7731ce1aa626b16c7118b71275f9a8f",
+    "module.js.map": "b9c61f1a937bb25a7c779e43f4206523fb9dce26de293dc671b10f3394219482",
+    "plugin.json": "f6f304f5fe6ca4fff460eff6671c0add36243774ad3819a69ca0a477483c3145"
+  }
+}
+-----BEGIN PGP SIGNATURE-----
+Version: OpenPGP.js v4.10.11
+Comment: https://openpgpjs.org
+
+wrkEARMKAAYFAmbW23gAIQkQfk0ManCIZucWIQTzOyW2kQdOhGNlcPN+TQxq
+cIhm51HFAgkBfPX9k5/ptFxhLS3Wyxl8rfo76c9zKLTTYCi0OxUinhM2yDnN
+LcngcVIZLojcMG14/8m5ARIdLqKuCaq31V2D4SYCCQH2ANNX+hzrlZF8nZuC
+RPp4MQM/7KoRffjogopISADbgTmB0MFC7uUAgeVOfjNQ8KEQvET8c07weRRJ
+FtmWTzUUuA==
+=iIb1
+-----END PGP SIGNATURE-----

@@ -5,11 +5,9 @@ import com.devops.accommodation.dto.request.CreateReservationRequest;
 import com.devops.accommodation.dto.response.HostFutureReservationResponse;
 import com.devops.accommodation.exception.ActionNotAllowedException;
 import com.devops.accommodation.exception.InvalidRelationshipException;
-import com.devops.accommodation.repository.AccommodationRepository;
 import com.devops.accommodation.repository.ReservationRepository;
 import com.devops.accommodation.service.interfaces.IAccommodationService;
 import com.devops.accommodation.service.interfaces.IPriceService;
-import com.devops.accommodation.service.interfaces.IRatingService;
 import com.devops.accommodation.service.interfaces.IReservationService;
 import com.devops.accommodation.utils.Constants;
 import com.devops.accommodation.utils.DateUtils;
@@ -19,9 +17,10 @@ import ftn.devops.dto.response.GuestReservationDTO;
 import ftn.devops.dto.response.HostReservationDTO;
 import ftn.devops.enums.NotificationType;
 import ftn.devops.enums.PriceType;
-import ftn.devops.log.LogType;
 import jakarta.persistence.EntityNotFoundException;
 import org.antlr.v4.runtime.misc.Pair;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -39,6 +38,7 @@ import java.util.zip.DataFormatException;
 @Transactional
 public class ReservationService implements IReservationService {
 
+    private final Logger logger = LoggerFactory.getLogger(ReservationService.class);
     @Autowired
     protected LogClientService logClientService;
     @Autowired
@@ -47,10 +47,6 @@ public class ReservationService implements IReservationService {
     private IAccommodationService accommodationService;
     @Autowired
     private IPriceService priceService;
-    @Autowired
-    private IRatingService ratingService;
-    @Autowired
-    private AccommodationRepository accommodationRepository;
 
     @Override
     public boolean hasApprovedReservationInside(long accommodationId, LocalDateTime fromDate, LocalDateTime toDate) {
@@ -69,7 +65,7 @@ public class ReservationService implements IReservationService {
     public Reservation findById(long id) {
         return reservationRepository.findById(id)
                 .orElseThrow(() -> {
-                    logClientService.sendLog(LogType.WARN, "Reservation not found", id);
+                    logger.warn("Reservation not found {}", id);
                     throw new EntityNotFoundException(Constants.RESERVATION_NOT_FOUND);
                 });
     }
@@ -78,7 +74,7 @@ public class ReservationService implements IReservationService {
     public Reservation findByRatingId(Long ratingId) {
         return reservationRepository.findByRatingId(ratingId)
                 .orElseThrow(() -> {
-                    logClientService.sendLog(LogType.WARN, "Reservation not found", ratingId);
+                    logger.warn("Reservation not found {}", ratingId);
                     throw new EntityNotFoundException(Constants.RESERVATION_NOT_FOUND);
                 });
     }
@@ -101,21 +97,21 @@ public class ReservationService implements IReservationService {
     @Override
     @TrackExecutionTime
     public List<GuestReservationDTO> addReservationRequest(User guest, CreateReservationRequest reservationRequest) {
-        logClientService.sendLog(LogType.INFO, "Add Reservation request", new Object[]{guest.getId(), reservationRequest});
+        logger.info("Add Reservation request");
         DateUtils.checkDateValidity(reservationRequest.getStartDate(), reservationRequest.getEndDate());
 
         if (hasApprovedReservationIntersect(reservationRequest.getAccommodationId(), reservationRequest.getStartDate(), reservationRequest.getEndDate())){
-            logClientService.sendLog(LogType.INFO, Constants.ACTION_NOT_ALLOWED_BECAUSE_CONTAINS_RESERVATION, new Object[]{guest.getId(), reservationRequest});
+            logger.info(Constants.ACTION_NOT_ALLOWED_BECAUSE_CONTAINS_RESERVATION);
             throw new ActionNotAllowedException(Constants.ACTION_NOT_ALLOWED_BECAUSE_CONTAINS_RESERVATION);
         }
 
         Accommodation accommodation = accommodationService.getAccommodationById(reservationRequest.getAccommodationId());
         if (reservationRequest.getNumberOfGuests() > accommodation.getMaxNumberOfGuests()) {
-            logClientService.sendLog(LogType.INFO, Constants.TOO_HIGH_GUEST_NUMBER, new Object[]{guest.getId(), reservationRequest});
+            logger.info(Constants.TOO_HIGH_GUEST_NUMBER);
             throw new ActionNotAllowedException(Constants.TOO_HIGH_GUEST_NUMBER);
         }
         if (reservationRequest.getNumberOfGuests() < accommodation.getMinNumberOfGuests()){
-            logClientService.sendLog(LogType.INFO, Constants.TOO_LOW_GUEST_NUMBER, new Object[]{guest.getId(), reservationRequest});
+            logger.info(Constants.TOO_LOW_GUEST_NUMBER);
             throw new ActionNotAllowedException(Constants.TOO_LOW_GUEST_NUMBER);
         }
 
@@ -129,15 +125,15 @@ public class ReservationService implements IReservationService {
     @Override
     @TrackExecutionTime
     public List<GuestReservationDTO> deleteReservationRequest(User user, long reservationRequestId) {
-        logClientService.sendLog(LogType.INFO, "Delete reservation request", new Object[]{user.getId(), reservationRequestId});
+        logger.info("Delete reservation request");
         Reservation reservation = findById(reservationRequestId);
         if (!Objects.equals(reservation.getGuest().getId(), user.getId())){
-            logClientService.sendLog(LogType.INFO, Constants.INVALID_RESERVATION_DELETE, new Object[]{user.getId(), reservationRequestId});
+            logger.info(Constants.INVALID_RESERVATION_DELETE);
             throw new InvalidRelationshipException(Constants.INVALID_RESERVATION_DELETE);
         }
 
         if (reservation.isApproved()) {
-            logClientService.sendLog(LogType.INFO, Constants.RESERVATION_CAN_NOT_BE_DELETED_AFTER_IT_GOT_APPROVED, new Object[]{user.getId(), reservationRequestId});
+            logger.info(Constants.RESERVATION_CAN_NOT_BE_DELETED_AFTER_IT_GOT_APPROVED);
             throw new ActionNotAllowedException(Constants.RESERVATION_CAN_NOT_BE_DELETED_AFTER_IT_GOT_APPROVED);
         }
         reservation.setDeleted(true);
@@ -148,14 +144,14 @@ public class ReservationService implements IReservationService {
     @Override
     @TrackExecutionTime
     public List<GuestReservationDTO> cancelReservation(User user, long reservationId) {
-        logClientService.sendLog(LogType.INFO, "Cancel reservation", new Object[]{user.getId(), reservationId});
+        logger.info("Cancel reservation");
         Reservation reservationRequest = findById(reservationId);
         if (!Objects.equals(reservationRequest.getGuest().getId(), user.getId())) {
-            logClientService.sendLog(LogType.INFO, Constants.INVALID_RESERVATION_CANCEL, new Object[]{user.getId(), reservationId});
+            logger.info(Constants.INVALID_RESERVATION_CANCEL);
             throw new InvalidRelationshipException(Constants.INVALID_RESERVATION_CANCEL);
         }
         if (reservationRequest.getStartDate().isBefore(LocalDateTime.now())){
-            logClientService.sendLog(LogType.INFO, Constants.INVALID_RESERVATION_CANCEL_TIME, new Object[]{user.getId(), reservationId});
+            logger.info(Constants.INVALID_RESERVATION_CANCEL_TIME);
             throw new ActionNotAllowedException(Constants.INVALID_RESERVATION_CANCEL_TIME);
         }
         reservationRequest.setCancelled(true);
@@ -167,15 +163,15 @@ public class ReservationService implements IReservationService {
     @Override
     @TrackExecutionTime
     public List<HostReservationDTO> acceptReservationRequest(User user, long reservationRequestId) throws DataFormatException, IOException {
-        logClientService.sendLog(LogType.INFO, "Accept reservation", new Object[]{user.getId(), reservationRequestId});
+        logger.info("Accept reservation");
         Reservation reservationRequest = findById(reservationRequestId);
         if (!Objects.equals(reservationRequest.getAccommodation().getHost().getId(), user.getId())){
-            logClientService.sendLog(LogType.INFO, Constants.INVALID_RESERVATION_ACCEPT, new Object[]{user.getId(), reservationRequestId});
+            logger.info(Constants.INVALID_RESERVATION_ACCEPT);
             throw new InvalidRelationshipException(Constants.INVALID_RESERVATION_ACCEPT);
         }
 
         if (hasApprovedReservationIntersect(reservationRequest.getAccommodation().getId(), reservationRequest.getStartDate(), reservationRequest.getEndDate())){
-            logClientService.sendLog(LogType.INFO, Constants.ACTION_NOT_ALLOWED_BECAUSE_CONTAINS_RESERVATION, new Object[]{user.getId(), reservationRequestId});
+            logger.info(Constants.ACTION_NOT_ALLOWED_BECAUSE_CONTAINS_RESERVATION);
             throw new ActionNotAllowedException(Constants.ACTION_NOT_ALLOWED_BECAUSE_CONTAINS_RESERVATION);
         }
         reservationRequest.setApproved(true);
@@ -196,21 +192,21 @@ public class ReservationService implements IReservationService {
     @Override
     @TrackExecutionTime
     public List<GuestReservationDTO> getReservationsForGuest(User user) {
-        logClientService.sendLog(LogType.INFO, "Get reservations for user", user.getId());
+        logger.info("Get reservations for user");
         return getGuestReservationRequestDTOs(reservationRepository
                 .findByGuest_IdAndStartDateAfterAndApprovedTrueAndDeletedFalseAndCancelledFalse(user.getId(), LocalDateTime.now()));
     }
 
     @Override
     public List<Reservation> getRatedReservations(User user) {
-        logClientService.sendLog(LogType.INFO, "Get rated reservations for user", user.getId());
+        logger.info("Get rated reservations for user");
         return reservationRepository
                 .findByGuest_IdAndApprovedTrueAndDeletedFalseAndCancelledFalseAndRatedTrue(user.getId());
     }
 
     @Override
     public List<Reservation> getUnratedReservations(User user) {
-        logClientService.sendLog(LogType.INFO, "Get unrated reservations for user", user.getId());
+        logger.info("Get unrated reservations for user");
         return reservationRepository
                 .findByGuest_IdAndEndDateBeforeAndApprovedTrueAndDeletedFalseAndCancelledFalseAndRatedFalse(user.getId(), LocalDateTime.now());
     }
@@ -218,9 +214,8 @@ public class ReservationService implements IReservationService {
     @Override
     @TrackExecutionTime
     public List<HostReservationDTO> getReservationsForHost(User user) throws DataFormatException, IOException {
-        logClientService.sendLog(LogType.INFO, "Get reservations for user", new Object[]{user.getId()} );
+        logger.info("Get reservations for user");
         List<HostReservationDTO> reservationRequests = new ArrayList<>();
-        logClientService.sendLog(LogType.INFO, "Get reservation requests for use", new Object[]{user.getId()});
         List<AccommodationDTO> accommodations = this.accommodationService.getAccommodations(user.getId());
         for(AccommodationDTO accommodation : accommodations) {
             reservationRequests.addAll(getHostReservationDTOs(reservationRepository.findByAccommodation_IdAndStartDateAfterAndApprovedTrueAndDeletedFalseAndCancelledFalse(accommodation.getId(), LocalDateTime.now())));
@@ -250,7 +245,7 @@ public class ReservationService implements IReservationService {
     @TrackExecutionTime
     public List<HostReservationDTO> getReservationRequestsForHost(User user) throws DataFormatException, IOException {
         List<HostReservationDTO> reservationRequests = new ArrayList<>();
-        logClientService.sendLog(LogType.INFO, "Get reservation requests for use", new Object[]{user.getId()});
+        logger.info("Get reservation requests for use {} ", user.getId());
         List<AccommodationDTO> accommodations = this.accommodationService.getAccommodations(user.getId());
         for(AccommodationDTO accommodation : accommodations) {
             reservationRequests.addAll(getHostReservationDTOs(reservationRepository.findByAccommodation_IdAndStartDateAfterAndApprovedFalseAndDeletedFalse(accommodation.getId(), LocalDateTime.now())));
@@ -261,7 +256,7 @@ public class ReservationService implements IReservationService {
     @Override
     @TrackExecutionTime
     public List<GuestReservationDTO> getReservationRequestsForGuest(User user) {
-        logClientService.sendLog(LogType.INFO, "Get reservation requests for user", user.getId());
+        logger.info("Get reservation requests for use {} ", user.getId());
         return getGuestReservationRequestDTOs(reservationRepository.findByGuest_IdAndStartDateAfterAndApprovedFalseAndDeletedFalse(user.getId(), LocalDateTime.now()));
     }
 
