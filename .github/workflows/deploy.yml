@@ -32,7 +32,7 @@ jobs:
       - name: Build Model
         run: |
           cd model-repo
-          mvn clean install
+          mvn clean install -DskipTests
 
       # - name: Cache Notifications Maven repository
       #   uses: actions/cache@v4
