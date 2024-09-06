@@ -56,12 +56,14 @@ jobs:
             mvn spring-boot:run &
               sleep 60  # Wait for the application to start
 
-      - name: Build Accommodation with Maven
+      - name: Add Accommodation
         uses: actions/checkout@v4
         with:
           path: acc-repo
-          run: |
-            cd acc-repo && mvn clean install && sleep 60 ls -la acc-repo
+
+      - name: Build Accommodation with Maven
+        run: |
+          cd acc-repo && mvn clean install && sleep 60 && ls -la acc-repo
 
       - name: List directory contents
         #uses: actions/checkout@v4
