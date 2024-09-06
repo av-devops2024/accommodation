@@ -1,0 +1,9 @@
+<configuration>
+    <appender name="OTLP" class="io.opentelemetry.exporter.otlp.logs.LogExporter">
+        <property name="endpoint" value="${tracing.url}" />
+    </appender>
+
+    <root level="info">
+        <appender-ref ref="OTLP" />
+    </root>
+</configuration>
