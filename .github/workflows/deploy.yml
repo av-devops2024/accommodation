@@ -61,7 +61,8 @@ jobs:
         with:
           path: acc-repo
           run: |
-            mvn clean install
+            mvn clean install &
+              sleep 60
 
       - name: List directory contents
         #uses: actions/checkout@v4
@@ -73,19 +74,19 @@ jobs:
         #echo "Listing target folder contents:"
         #ls -la target
 
-      - name: Build Docker image
-        # uses: actions/checkout@v2
-        # with:
-        run: |
-          cd acc-repo && docker build -t ${{secrets.DOCKERHUB_USERNAME}}/devops2024-accommodation:${{ steps.meta.outputs.tags }} .
+      # - name: Build Docker image
+      #   # uses: actions/checkout@v2
+      #   # with:
+      #   run: |
+      #     cd acc-repo && docker build -t ${{secrets.DOCKERHUB_USERNAME}}/devops2024-accommodation:${{ steps.meta.outputs.tags }} .
 
-      - name: List directory contents 2
-        #uses: actions/checkout@v4
-        #with:
-        run: |
-          echo "Listing root folder contents:"
-          ls -la
-          cd acc-repo && ls -la
+      # - name: List directory contents 2
+      #   #uses: actions/checkout@v4
+      #   #with:
+      #   run: |
+      #     echo "Listing root folder contents:"
+      #     ls -la
+      #     cd acc-repo && ls -la
 
       - name: Extract Metadata
         uses: docker/metadata-action@v5
@@ -103,11 +104,17 @@ jobs:
           password: ${{secrets.DOCKERHUB_TOKEN}}
           logout: true
 
-      - name: Push Docker image
-        # uses: actions/checkout@v2
-        # with:
-        run: |
-          cd acc-repo && docker push ${{ steps.meta.outputs.tags }}
+      - name: Build And Push
+        uses: docker/build-push-action@v2
+        with:
+          context: acc-repo
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+      # - name: Push Docker image
+      #   # uses: actions/checkout@v2
+      #   # with:
+      #   run: |
+      #     cd acc-repo && docker push ${{ steps.meta.outputs.tags }}
       # - name: Push Docker image
       #   uses: docker/build-push-action@v2
       #   with:
