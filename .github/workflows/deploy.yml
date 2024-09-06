@@ -70,7 +70,7 @@ jobs:
       - name: Build Docker image
         uses: actions/checkout@v2
         with:
-          run: docker build -t acc-image .
+          run: docker build -t ${{ steps.meta.outputs.tags }} .
 
       - name: Extract Metadata
         uses: docker/metadata-action@v5
