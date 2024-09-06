@@ -26,13 +26,15 @@ jobs:
         with:
           repository: av-devops2024/model
           token: ${{ secrets.PAT_TOKEN }}
+          path: model-repo
           run: mvn clean install
 
       - name: Cache Notifications Maven repository
         uses: actions/cache@v4
         with:
           repository: av-devops2024/notifications
-          path: ~/.m2/repository
+          ref: develop
+          path: not-repo
           key: notifications-${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
           restore-keys: |
             notifications-${{ runner.os }}-maven-
@@ -40,28 +42,29 @@ jobs:
       - name: Build notifications
         uses: actions/checkout@v2
         with:
-          repository: av-devops2024/notifications
-          token: ${{ secrets.PAT_TOKEN }}
-          run: mvn clean install
+          run: |
+            cd not-repo
+            mvn clean install
+
       - name: Start Spring Boot application
         uses: actions/checkout@v2
         with:
-          repository: av-devops2024/notifications
-          ref: develop
-          token: ${{ secrets.PAT_TOKEN }}
           run: |
+            cd not-repo
             mvn spring-boot:run &
               sleep 60  # Wait for the application to start
 
       - name: Build Accommodation with Maven
-        # uses: actions/checkout@v2
-        # with:
-        run: mvn clean install
+        uses: actions/checkout@v2
+        with:
+          path: acc-repo
+          run: mvn clean install
 
       - name: List directory contents
         # uses: actions/checkout@v2
         # with:
         run: |
+          cd acc-repo
           echo "Listing root folder contents:"
           ls -la
           echo "Listing target folder contents:"
@@ -70,7 +73,9 @@ jobs:
       - name: Build Docker image
         # uses: actions/checkout@v2
         # with:
-        run: docker build -t ${{ steps.meta.outputs.tags }} .
+        run: |
+          cd acc-repo 
+          docker build -t ${{ steps.meta.outputs.tags }} .
 
       - name: Extract Metadata
         uses: docker/metadata-action@v5
@@ -91,7 +96,9 @@ jobs:
       - name: Push Docker image
         # uses: actions/checkout@v2
         # with:
-        run: docker push ${{ steps.meta.outputs.tags }}
+        run: |
+          cd acc-repo
+          docker push ${{ steps.meta.outputs.tags }}
       # - name: Push Docker image
       #   uses: docker/build-push-action@v2
       #   with:
