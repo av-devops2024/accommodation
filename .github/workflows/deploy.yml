@@ -54,7 +54,9 @@ jobs:
             sleep 60  # Wait for the application to start
 
       - name: Build Accommodation with Maven
-        run: mvn clean install
+        uses: actions/checkout@v2
+        with:
+          run: mvn clean install
 
       - name: List directory contents
         run: |
